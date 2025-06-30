@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { githubLight } from '@uiw/codemirror-theme-github';
 import { keymap } from '@codemirror/view';
 import { defaultKeymap } from '@codemirror/commands';
 
@@ -25,7 +25,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad }) => 
       extensions: [
         basicSetup,
         javascript(),
-        oneDark,
+        githubLight,
         keymap.of(defaultKeymap),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

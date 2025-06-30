@@ -22,6 +22,9 @@ bin/
 dist/
 build/
 
+# Data files and directories
+data/
+
 # Environment files
 .env
 .env.local

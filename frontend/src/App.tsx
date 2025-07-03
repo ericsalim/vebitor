@@ -85,10 +85,7 @@ function App() {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Web Text Editor</h1>
-      </header>
-      <main style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
+      <main style={{ display: 'flex', height: '100vh' }}>
         <FileExplorer
           onFileSelect={handleFileSelect}
           selectedFile={activeFile}

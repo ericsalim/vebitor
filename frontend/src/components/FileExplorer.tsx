@@ -66,7 +66,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
 
   return (
     <div style={{ width: '250px', borderRight: '1px solid #ccc', padding: '10px' }}>
-      <h3>Files</h3>
+      <h3>Vebitor</h3>
       
       {error && (
         <div style={{ 

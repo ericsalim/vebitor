@@ -10,12 +10,21 @@ interface TextEditorProps {
   filePath?: string;
   onSave?: (content: string) => void;
   onLoad?: (content: string) => void;
+  onContentChange?: (filePath: string) => void;
 }
 
-const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad }) => {
+const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad, onContentChange }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isInitialLoadRef = useRef(true);
+
+  // Reset isInitialLoad when filePath changes (switching tabs)
+  useEffect(() => {
+    setIsInitialLoad(true);
+    isInitialLoadRef.current = true;
+  }, [filePath]);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -28,8 +37,10 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad }) => 
         githubLight,
         keymap.of(defaultKeymap),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            // Handle content changes if needed
+          if (update.docChanged && !isInitialLoadRef.current) {
+            if (typeof onContentChange === 'function' && filePath) {
+              onContentChange(filePath);
+            }
           }
         }),
       ],
@@ -45,7 +56,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad }) => 
     return () => {
       view.destroy();
     };
-  }, []);
+  }, [filePath]);
 
   const loadDocument = async () => {
     if (!filePath || !editorView) return;
@@ -71,6 +82,8 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad }) => 
       console.error('Error loading document:', error);
     } finally {
       setIsLoading(false);
+      setIsInitialLoad(false);
+      isInitialLoadRef.current = false;
     }
   };
 
@@ -106,6 +119,15 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad }) => 
       loadDocument();
     }
   }, [filePath, editorView]);
+
+  // Ensure isInitialLoad is set to false after a short delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+      isInitialLoadRef.current = false;
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [filePath]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

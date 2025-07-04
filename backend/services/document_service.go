@@ -8,9 +8,9 @@ import (
 )
 
 func getDataDir() string {
-	dataDir := os.Getenv("DATA_DIR")
+	dataDir := os.Getenv("USERDATA_DIR")
 	if dataDir == "" {
-		dataDir = "data"
+		dataDir = "userdata"
 	}
 	return dataDir
 }
@@ -39,6 +39,10 @@ func DeleteDocument(filePath string) error {
 }
 
 func ListDocuments() ([]models.Document, error) {
+	// Ensure the userdata directory exists
+	if err := os.MkdirAll(getDataDir(), 0755); err != nil {
+		return nil, err
+	}
 	var docs []models.Document
 	err := filepath.Walk(getDataDir(), func(path string, info os.FileInfo, err error) error {
 		if err != nil {

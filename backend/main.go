@@ -8,14 +8,9 @@ import (
 )
 
 func main() {
-	// Get data directory from environment variable, default to "data"
-	dataDir := os.Getenv("DATA_DIR")
-	if dataDir == "" {
-		dataDir = "data"
-	}
-
-	// Set the data directory for the service
-	os.Setenv("DATA_DIR", dataDir)
+	// Set the user data and app data directories
+	os.Setenv("USERDATA_DIR", "userdata")
+	os.Setenv("APPDATA_DIR", "appdata")
 
 	r := gin.Default()
 

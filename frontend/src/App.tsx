@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import FileExplorer from './components/FileExplorer';
 import TextEditor from './components/TextEditor';
@@ -12,17 +12,38 @@ function App() {
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
   const [activeFile, setActiveFile] = useState<string>('');
   const [pendingClose, setPendingClose] = useState<null | { filePath: string }>(null);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [globalSearchMode, setGlobalSearchMode] = useState<'find' | 'replace'>('find');
+
+  // Helper to update session
+  const updateSession = (openedFiles: OpenFile[], lastActiveFile: string) => {
+    fetch('http://localhost:8080/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        openedFiles: openedFiles.map(f => f.filePath),
+        lastActiveFile,
+      })
+    }).catch(err => console.error('Session save error:', err));
+  };
 
   const handleFileSelect = (filePath: string) => {
     setOpenFiles((files) => {
       if (files.find((f) => f.filePath === filePath)) return files;
-      return [...files, { filePath, dirty: false }];
+      const updated = [...files, { filePath, dirty: false }];
+      updateSession(updated, filePath);
+      return updated;
     });
     setActiveFile(filePath);
+    // Also update session if file is already open and just focused
+    if (openFiles.find(f => f.filePath === filePath)) {
+      updateSession(openFiles, filePath);
+    }
   };
 
   const handleTabClick = (filePath: string) => {
     setActiveFile(filePath);
+    updateSession(openFiles, filePath);
   };
 
   const handleTabClose = (e: React.MouseEvent, filePath: string) => {
@@ -36,7 +57,21 @@ function App() {
   };
 
   const actuallyCloseTab = (filePath: string) => {
-    setOpenFiles((files) => files.filter((f) => f.filePath !== filePath));
+    setOpenFiles((files) => {
+      const updated = files.filter((f) => f.filePath !== filePath);
+      // Determine new active file
+      let newActive = activeFile;
+      if (activeFile === filePath) {
+        if (updated.length > 0) {
+          newActive = updated[updated.length - 1].filePath;
+        } else {
+          newActive = '';
+        }
+        setActiveFile(newActive);
+      }
+      updateSession(updated, newActive);
+      return updated;
+    });
     setTimeout(() => {
       setOpenFiles((files) => {
         if (files.length === 0) {
@@ -82,6 +117,40 @@ function App() {
   const handlePromptCancel = () => {
     setPendingClose(null);
   };
+
+  // Keyboard shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
+        e.preventDefault();
+        setGlobalSearchMode('find');
+        setShowGlobalSearch(true);
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
+        e.preventDefault();
+        setGlobalSearchMode('replace');
+        setShowGlobalSearch(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Fetch session on startup
+  useEffect(() => {
+    fetch('http://localhost:8080/session')
+      .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch session'))
+      .then((session) => {
+        if (session && Array.isArray(session.openedFiles)) {
+          setOpenFiles(session.openedFiles.map((filePath: string) => ({ filePath, dirty: false })));
+          if (session.lastActiveFile && session.openedFiles.includes(session.lastActiveFile)) {
+            setActiveFile(session.lastActiveFile);
+          } else if (session.openedFiles.length > 0) {
+            setActiveFile(session.openedFiles[0]);
+          }
+        }
+      })
+      .catch(err => console.error('Session fetch error:', err));
+  }, []);
 
   return (
     <div className="App">
@@ -163,6 +232,28 @@ function App() {
                   <button onClick={handlePromptSave}>Save</button>
                   <button onClick={handlePromptDontSave}>Don't Save</button>
                   <button onClick={handlePromptCancel}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Global Search/Replace Modal */}
+          {showGlobalSearch && (
+            <div style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2000,
+            }}>
+              <div style={{ background: '#fff', padding: 24, borderRadius: 8, minWidth: 400, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                <div style={{ marginBottom: 16, fontWeight: 'bold' }}>
+                  {globalSearchMode === 'find' ? 'Global Find' : 'Global Replace'}
+                </div>
+                {/* TODO: Add search/replace form and results here */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => setShowGlobalSearch(false)}>Close</button>
                 </div>
               </div>
             </div>

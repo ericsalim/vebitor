@@ -14,4 +14,7 @@ func RegisterRoutes(r *gin.Engine) {
 		documents.DELETE("/*filePath", controllers.DeleteDocument)
 		documents.GET("", controllers.ListDocuments)
 	}
+
+	r.GET("/session", controllers.GetSession)
+	r.POST("/session", controllers.SaveSession)
 } 

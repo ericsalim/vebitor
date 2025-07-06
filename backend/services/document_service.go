@@ -21,7 +21,7 @@ func ReadDocument(filePath string) (models.Document, error) {
 	if err != nil {
 		return models.Document{}, err
 	}
-	return models.Document{FilePath: filePath, Content: string(content)}, nil
+	return models.Document{FilePath: filePath, Content: string(content), IsFolder: false}, nil
 }
 
 func WriteDocument(filePath, content string) error {
@@ -38,28 +38,50 @@ func DeleteDocument(filePath string) error {
 	return os.Remove(absPath)
 }
 
-func ListDocuments() ([]models.Document, error) {
+func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 	// Ensure the userdata directory exists
 	if err := os.MkdirAll(getDataDir(), 0755); err != nil {
 		return nil, err
 	}
-	var docs []models.Document
-	err := filepath.Walk(getDataDir(), func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+
+	var docs []models.DocumentMetadata
+	basePath := getDataDir()
+
+	// If parent is specified, use it as the base path
+	if parent != "" {
+		basePath = filepath.Join(getDataDir(), parent)
+		// Ensure the parent directory exists
+		if err := os.MkdirAll(basePath, 0755); err != nil {
+			return nil, err
 		}
-		if !info.IsDir() {
-			relPath, _ := filepath.Rel(getDataDir(), path)
-			content, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			docs = append(docs, models.Document{FilePath: relPath, Content: string(content)})
-		}
-		return nil
-	})
+	}
+
+	// List only immediate children (one level deep)
+	entries, err := ioutil.ReadDir(basePath)
 	if err != nil {
 		return nil, err
 	}
+
+	for _, entry := range entries {
+		relPath := entry.Name()
+		if parent != "" {
+			relPath = filepath.Join(parent, entry.Name())
+		}
+
+		if entry.IsDir() {
+			// It's a folder
+			docs = append(docs, models.DocumentMetadata{
+				FilePath: relPath,
+				IsFolder: true,
+			})
+		} else {
+			// It's a file - don't load content, just metadata
+			docs = append(docs, models.DocumentMetadata{
+				FilePath: relPath,
+				IsFolder: false,
+			})
+		}
+	}
+
 	return docs, nil
-} 
+}

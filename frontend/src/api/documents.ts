@@ -1,7 +1,11 @@
 const API_BASE_URL = 'http://localhost:8080';
 
-export interface Document {
+export interface DocumentMetadata {
   filePath: string;
+  isFolder: boolean;
+}
+
+export interface Document extends DocumentMetadata {
   content: string;
 }
 
@@ -51,8 +55,11 @@ export const documentsApi = {
     }
   },
 
-  async listDocuments(): Promise<Document[]> {
-    const response = await fetch(`${API_BASE_URL}/documents`);
+  async listDocuments(parent?: string): Promise<DocumentMetadata[]> {
+    const url = parent 
+      ? `${API_BASE_URL}/documents?parent=${encodeURIComponent(parent)}`
+      : `${API_BASE_URL}/documents`;
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to list documents: ${response.statusText}`);
     }

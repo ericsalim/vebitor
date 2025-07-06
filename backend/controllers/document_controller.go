@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"net/http"
-	"github.com/gin-gonic/gin"
 	"texteditor-backend/models"
 	"texteditor-backend/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetDocument(c *gin.Context) {
@@ -71,10 +72,11 @@ func DeleteDocument(c *gin.Context) {
 }
 
 func ListDocuments(c *gin.Context) {
-	docs, err := services.ListDocuments()
+	parent := c.Query("parent")
+	docs, err := services.ListDocuments(parent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, docs)
-} 
+}

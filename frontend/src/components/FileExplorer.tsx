@@ -21,7 +21,7 @@ const FileIcon = (
 
 const UpFolderIcon = (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: 8 }}>
-    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+    <path d="M2 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7.5L6 2H2z"/>
   </svg>
 );
 
@@ -161,7 +161,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
                 alignItems: 'center',
                 padding: '4px 8px',
                 cursor: 'pointer',
-                color: '#666',
+                color: '#222',
                 fontSize: '14px',
                 borderBottom: '1px solid #eee',
                 marginBottom: '5px'
@@ -185,8 +185,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
                 padding: '4px 8px',
                 cursor: item.isFolder ? 'pointer' : 'pointer',
                 background: selectedFile === (currentPath ? `${currentPath}/${item.filePath}` : item.filePath) ? '#e0e0e0' : 'transparent',
-                fontWeight: item.isFolder ? 'bold' : 'normal',
-                color: item.isFolder ? '#b59b3a' : '#222',
+                fontWeight: 'normal',
+                color: '#222',
                 fontSize: '14px',
                 borderRadius: '3px',
                 marginBottom: '2px'

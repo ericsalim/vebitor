@@ -96,7 +96,12 @@ function App() {
   };
 
   const handleContentChange = (filePath: string) => {
-    setOpenFiles((files) => files.map(f => f.filePath === filePath ? { ...f, dirty: true } : f));
+    console.log('handleContentChange called for:', filePath);
+    setOpenFiles((files) => {
+      const updated = files.map(f => f.filePath === filePath ? { ...f, dirty: true } : f);
+      console.log('Updated openFiles:', updated);
+      return updated;
+    });
   };
 
   // Prompt dialog handlers
@@ -194,14 +199,29 @@ function App() {
             ))}
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
-            {activeFile ? (
-              <TextEditor
-                key={activeFile}
-                filePath={activeFile}
-                onSave={handleSave}
-                onLoad={handleLoad}
-                onContentChange={handleContentChange}
-              />
+            {openFiles.length > 0 ? (
+              <div style={{ position: 'relative', height: '100%' }}>
+                {openFiles.map((file) => (
+                  <div
+                    key={file.filePath}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: activeFile === file.filePath ? 'block' : 'none',
+                    }}
+                  >
+                    <TextEditor
+                      filePath={file.filePath}
+                      onSave={handleSave}
+                      onLoad={handleLoad}
+                      onContentChange={handleContentChange}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div style={{
                 display: 'flex',

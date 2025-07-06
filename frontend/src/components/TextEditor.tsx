@@ -17,15 +17,22 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad, onCon
   const editorRef = useRef<HTMLDivElement>(null);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const filePathRef = useRef<string | undefined>(filePath);
+  const isInitializedRef = useRef(false);
   const isInitialLoadRef = useRef(true);
 
-  // Reset isInitialLoad when filePath changes (switching tabs)
+  // Update the ref when filePath changes
   useEffect(() => {
-    setIsInitialLoad(true);
-    isInitialLoadRef.current = true;
+    filePathRef.current = filePath;
   }, [filePath]);
 
+  // Update the ref when isInitialized changes
+  useEffect(() => {
+    isInitializedRef.current = isInitialized;
+  }, [isInitialized]);
+
+  // Create CodeMirror instance when component mounts
   useEffect(() => {
     if (!editorRef.current) return;
 
@@ -36,10 +43,20 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad, onCon
         javascript(),
         githubLight,
         keymap.of(defaultKeymap),
+        keymap.of([
+          {
+            key: 'Ctrl-s',
+            run: () => {
+              saveDocument();
+              return true;
+            }
+          }
+        ]),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged && !isInitialLoadRef.current) {
-            if (typeof onContentChange === 'function' && filePath) {
-              onContentChange(filePath);
+          if (update.docChanged && isInitializedRef.current && !isInitialLoadRef.current) {
+            console.log('Content changed for file:', filePathRef.current, 'isInitialized:', isInitializedRef.current);
+            if (typeof onContentChange === 'function' && filePathRef.current) {
+              onContentChange(filePathRef.current);
             }
           }
         }),
@@ -56,36 +73,52 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad, onCon
     return () => {
       view.destroy();
     };
-  }, [filePath]);
+  }, []); // Only run once when component mounts
 
-  const loadDocument = async () => {
-    if (!filePath || !editorView) return;
+  // Load document content when filePath is available and editor is ready
+  useEffect(() => {
+    if (!filePath || !editorView || !isInitialized) return;
 
-    setIsLoading(true);
-    try {
-      const response = await fetch(`http://localhost:8080/documents/${encodeURIComponent(filePath)}`);
-      if (response.ok) {
-        const doc = await response.json();
-        const newState = editorView.state.update({
-          changes: {
-            from: 0,
-            to: editorView.state.doc.length,
-            insert: doc.content,
-          },
-        });
-        editorView.dispatch(newState);
-        onLoad?.(doc.content);
-      } else {
-        console.error('Failed to load document');
+    const loadDocument = async () => {
+      setIsLoading(true);
+      isInitialLoadRef.current = true; // Mark as initial load
+      try {
+        const response = await fetch(`http://localhost:8080/documents/${encodeURIComponent(filePath)}`);
+        if (response.ok) {
+          const doc = await response.json();
+          const newState = editorView.state.update({
+            changes: {
+              from: 0,
+              to: editorView.state.doc.length,
+              insert: doc.content,
+            },
+          });
+          editorView.dispatch(newState);
+          onLoad?.(doc.content);
+        } else {
+          console.error('Failed to load document');
+        }
+      } catch (error) {
+        console.error('Error loading document:', error);
+      } finally {
+        setIsLoading(false);
+        // Mark initial load as complete after a short delay
+        setTimeout(() => {
+          isInitialLoadRef.current = false;
+        }, 100);
       }
-    } catch (error) {
-      console.error('Error loading document:', error);
-    } finally {
-      setIsLoading(false);
-      setIsInitialLoad(false);
-      isInitialLoadRef.current = false;
-    }
-  };
+    };
+
+    loadDocument();
+  }, [filePath, editorView, isInitialized]);
+
+  // Mark as initialized after a short delay to avoid triggering content change on initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const saveDocument = async () => {
     if (!filePath || !editorView) return;
@@ -113,21 +146,6 @@ const TextEditor: React.FC<TextEditorProps> = ({ filePath, onSave, onLoad, onCon
       console.error('Error saving document:', error);
     }
   };
-
-  useEffect(() => {
-    if (filePath && editorView) {
-      loadDocument();
-    }
-  }, [filePath, editorView]);
-
-  // Ensure isInitialLoad is set to false after a short delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoad(false);
-      isInitialLoadRef.current = false;
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [filePath]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

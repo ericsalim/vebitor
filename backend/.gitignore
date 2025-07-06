@@ -65,9 +65,6 @@ temp/
 coverage.txt
 coverage.html
 
-# Air live reload
-tmp/ 
-
 # Appdata and userdata
 appdata/
 userdata/

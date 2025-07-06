@@ -1,212 +1,76 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { documentsApi, DocumentMetadata, Document } from '../api/documents';
-import {
-  UncontrolledTreeEnvironment,
-  Tree,
-  StaticTreeDataProvider,
-  TreeItemIndex,
-  TreeItem,
-} from 'react-complex-tree';
-import 'react-complex-tree/lib/style-modern.css';
+import React, { useEffect, useState } from 'react';
+import { documentsApi, DocumentMetadata } from '../api/documents';
 
 interface FileExplorerProps {
   onFileSelect: (filePath: string) => void;
   selectedFile?: string;
 }
 
-// SVG icons
+// SVG Icons
 const FolderIcon = (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 4 }}>
-    <path d="M1.5 4A1.5 1.5 0 013 2.5h3.38a1.5 1.5 0 011.06.44l.62.62A1.5 1.5 0 008.12 4H13a1.5 1.5 0 011.5 1.5v6A1.5 1.5 0 0113 13H3A1.5 1.5 0 011.5 11.5v-7.5z" fill="#c9ae5d" stroke="#b59b3a"/>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: 8 }}>
+    <path d="M2 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7.5L6 2H2z"/>
   </svg>
 );
+
 const FileIcon = (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 4 }}>
-    <rect x="3" y="2" width="10" height="12" rx="2" fill="#90caf9" stroke="#1976d2"/>
-    <rect x="5" y="5" width="6" height="1" fill="#1976d2"/>
-    <rect x="5" y="7" width="6" height="1" fill="#1976d2"/>
-    <rect x="5" y="9" width="4" height="1" fill="#1976d2"/>
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: 8 }}>
+    <path d="M3.5 1.75V4h9V1.75a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25zM3.5 5.5v8.75c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V5.5h-9z"/>
   </svg>
 );
 
-// Helper to build tree data from flat documents list
-function buildTreeFromDocuments(documents: DocumentMetadata[], folderContents: Map<string, DocumentMetadata[]>, expandedFolders: Set<string>) {
-  console.log('buildTreeFromDocuments called with:', documents);
-  const rootId = 'root';
-  const items: Record<TreeItemIndex, TreeItem> = {
-    [rootId]: {
-      index: rootId,
-      data: { title: 'Root', isFolder: true, path: '' },
-      children: [],
-      isFolder: true,
-    },
-  };
-
-  // Group documents by their path segments
-  const pathMap = new Map<string, string[]>();
-  
-  // Add root level documents
-  for (const doc of documents) {
-    console.log('Processing document:', doc.filePath);
-    const parts = doc.filePath.split('/');
-    let currentPath = '';
-    
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      const parentPath = currentPath;
-      currentPath = currentPath ? currentPath + '/' + part : part;
-      
-      if (!pathMap.has(currentPath)) {
-        pathMap.set(currentPath, []);
-      }
-      
-      if (parentPath && pathMap.has(parentPath)) {
-        if (!pathMap.get(parentPath)!.includes(currentPath)) {
-          pathMap.get(parentPath)!.push(currentPath);
-        }
-      }
-    }
-  }
-
-  // Add contents from expanded folders
-  folderContents.forEach((contents, folderPath) => {
-    if (expandedFolders.has(folderPath)) {
-      console.log('Processing expanded folder:', folderPath, 'with contents:', contents);
-      for (const doc of contents) {
-        // Normalize path separators to forward slashes
-        const normalizedPath = doc.filePath.replace(/\\/g, '/');
-        console.log('Normalized path:', normalizedPath);
-        
-        if (!pathMap.has(folderPath)) {
-          pathMap.set(folderPath, []);
-        }
-        if (!pathMap.get(folderPath)!.includes(normalizedPath)) {
-          pathMap.get(folderPath)!.push(normalizedPath);
-        }
-        
-        // Also add the full path to the pathMap so it can be rendered
-        if (!pathMap.has(normalizedPath)) {
-          pathMap.set(normalizedPath, []);
-        }
-      }
-    }
-  });
-
-  console.log('Path map:', pathMap);
-
-  // Build tree items
-  pathMap.forEach((children, path) => {
-    const parts = path.split('/');
-    const name = parts[parts.length - 1];
-    
-    // Check if this is a root document
-    const matchingDoc = documents.find(d => d.filePath === path);
-    
-    // Check if this is a folder content item
-    const allFolderContents: DocumentMetadata[] = [];
-    folderContents.forEach(contents => {
-      allFolderContents.push(...contents);
-    });
-    
-    const folderContentItem = allFolderContents.find(doc => {
-      const normalizedDocPath = doc.filePath.replace(/\\/g, '/');
-      return normalizedDocPath === path;
-    });
-    const isFolderContent = !!folderContentItem;
-    
-    let isFolder = false;
-    if (matchingDoc) {
-      isFolder = matchingDoc.isFolder;
-    } else if (isFolderContent && folderContentItem) {
-      isFolder = folderContentItem.isFolder;
-    } else {
-      // Fallback: check if it has children
-      isFolder = children.length > 0;
-    }
-    
-    items[path] = {
-      index: path,
-      data: { title: name, isFolder: isFolder, path },
-      children: children.length > 0 ? children : [],
-      isFolder: isFolder,
-    };
-  });
-
-  // Set root children
-  const rootChildren: string[] = [];
-  pathMap.forEach((children, path) => {
-    // If this path has no parent (i.e., it's a top-level item), add it to root
-    if (!path.includes('/')) {
-      rootChildren.push(path);
-    }
-  });
-  items[rootId].children = rootChildren;
-  
-  console.log('Final tree items:', items);
-  console.log('Root children:', items[rootId].children);
-  console.log('my_data children:', items['my_data']?.children);
-  console.log('Complete tree structure:');
-  Object.entries(items).forEach(([path, item]) => {
-    console.log(`  ${path}:`, {
-      title: item.data.title,
-      isFolder: item.isFolder,
-      children: item.children
-    });
-  });
-
-  return { rootId, items };
-}
+const UpFolderIcon = (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: 8 }}>
+    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+  </svg>
+);
 
 const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile }) => {
-  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
+  const [currentPath, setCurrentPath] = useState<string>('');
+  const [items, setItems] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState('');
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const [folderContents, setFolderContents] = useState<Map<string, DocumentMetadata[]>>(new Map());
-  const [dataVersion, setDataVersion] = useState(0);
 
-  const loadDocuments = async () => {
+  const loadCurrentDirectory = async (path: string = '') => {
     setLoading(true);
     setError(null);
     try {
-      const docs = await documentsApi.listDocuments();
-      setDocuments(docs || []);
+      const docs = await documentsApi.listDocuments(path);
+      setItems(docs || []);
     } catch (error) {
-      console.error('Failed to load documents:', error);
-      setError('Failed to load documents. Make sure the backend is running.');
-      setDocuments([]);
+      console.error('Failed to load directory:', error);
+      setError('Failed to load directory. Make sure the backend is running.');
+      setItems([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadDocuments();
-  }, []);
+    loadCurrentDirectory(currentPath);
+  }, [currentPath]);
 
-  const loadFolderContents = async (folderPath: string) => {
-    if (folderContents.has(folderPath)) return; // Already loaded
-    
-    try {
-      const contents = await documentsApi.listDocuments(folderPath);
-      setFolderContents(prev => new Map(prev).set(folderPath, contents));
-      setDataVersion(prev => prev + 1); // Force re-render
-    } catch (error) {
-      console.error('Failed to load folder contents:', error);
-      setFolderContents(prev => new Map(prev).set(folderPath, []));
-      setDataVersion(prev => prev + 1); // Force re-render
+  const handleFolderClick = (folderPath: string) => {
+    if (folderPath === '..') {
+      // Go up one level
+      const parentPath = currentPath.split('/').slice(0, -1).join('/');
+      setCurrentPath(parentPath);
+    } else {
+      // Enter folder
+      const newPath = currentPath ? `${currentPath}/${folderPath}` : folderPath;
+      setCurrentPath(newPath);
     }
   };
 
-  const handleFolderExpand = async (folderPath: string) => {
-    setExpandedFolders(prev => new Set(prev).add(folderPath));
-    await loadFolderContents(folderPath);
+  const handleFileClick = (filePath: string) => {
+    const fullPath = currentPath ? `${currentPath}/${filePath}` : filePath;
+    onFileSelect(fullPath);
   };
 
   const handleCreateFile = async () => {
     if (!newFileName.trim()) return;
-    const filePath = newFileName.trim();
+    const filePath = currentPath ? `${currentPath}/${newFileName.trim()}` : newFileName.trim();
     try {
       await documentsApi.createDocument({
         filePath,
@@ -214,90 +78,49 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
         isFolder: false,
       });
       setNewFileName('');
-      loadDocuments();
+      loadCurrentDirectory(currentPath);
     } catch (error) {
       console.error('Failed to create file:', error);
       setError('Failed to create file. Make sure the backend is running.');
     }
   };
 
-  const handleDeleteFile = async (filePath: string) => {
-    if (!window.confirm(`Are you sure you want to delete ${filePath}?`)) return;
+  const handleDeleteItem = async (itemPath: string) => {
+    const fullPath = currentPath ? `${currentPath}/${itemPath}` : itemPath;
+    if (!window.confirm(`Are you sure you want to delete ${fullPath}?`)) return;
     try {
-      await documentsApi.deleteDocument(filePath);
-      loadDocuments();
-      if (selectedFile === filePath) {
+      await documentsApi.deleteDocument(fullPath);
+      loadCurrentDirectory(currentPath);
+      if (selectedFile === fullPath) {
         onFileSelect('');
       }
     } catch (error) {
-      console.error('Failed to delete file:', error);
-      setError('Failed to delete file. Make sure the backend is running.');
+      console.error('Failed to delete item:', error);
+      setError('Failed to delete item. Make sure the backend is running.');
     }
   };
 
-  // Build tree data
-  const { rootId, items } = useMemo(() => buildTreeFromDocuments(documents, folderContents, expandedFolders), [documents, folderContents, expandedFolders]);
-
-  // Data provider
-  const dataProvider = useMemo(
-    () => new StaticTreeDataProvider(items, (item, data) => ({ 
-      ...item, 
-      data: data && typeof data === 'object' ? Object.assign({}, item.data, data) : { ...item.data } 
-    })),
-    [items]
-  );
-
-  // Custom render for tree items
-  const renderItem = ({ item, depth }: any) => {
-    const isFile = !item.isFolder;
-    const isSelected = selectedFile === item.data.path;
-    const label = item.data.title;
-    
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          background: isSelected ? '#e0e0e0' : 'transparent',
-          fontWeight: item.isFolder ? 'bold' : 'normal',
-          color: item.isFolder ? '#b59b3a' : '#222',
-          cursor: isFile ? 'pointer' : 'default',
-          paddingLeft: 4 + depth * 16,
-        }}
-        onClick={() => {
-          if (isFile) {
-            onFileSelect(item.data.path);
-          }
-        }}
-      >
-        {item.isFolder ? FolderIcon : FileIcon}
-        {label}
-        {isFile && (
-          <span
-            onClick={e => {
-              e.stopPropagation();
-              handleDeleteFile(item.data.path);
-            }}
-            style={{ 
-              marginLeft: 8, 
-              padding: '2px 5px',
-              cursor: 'pointer',
-              color: '#999',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}
-            title="Delete file"
-          >
-            ×
-          </span>
-        )}
-      </div>
-    );
+  const getCurrentPathDisplay = () => {
+    return currentPath || 'Root';
   };
 
   return (
     <div style={{ width: '250px', borderRight: '1px solid #ccc', padding: '10px', height: '100%', overflow: 'auto' }}>
       <h3>Vebitor</h3>
+      
+      {/* Current Path Display */}
+      <div style={{ 
+        fontSize: '12px', 
+        color: '#666', 
+        marginBottom: '10px',
+        padding: '5px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '3px',
+        wordBreak: 'break-all'
+      }}>
+        📁 {getCurrentPathDisplay()}
+      </div>
+
       {error && (
         <div style={{
           color: 'red',
@@ -310,6 +133,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
           {error}
         </div>
       )}
+
+      {/* Create File Section */}
       <div style={{ marginBottom: '10px' }}>
         <input
           type="text"
@@ -322,31 +147,82 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
           Create File
         </button>
       </div>
+
+      {/* Navigation and File List */}
       {loading ? (
         <div>Loading...</div>
       ) : (
-        <UncontrolledTreeEnvironment
-          key={dataVersion}
-          dataProvider={dataProvider}
-          getItemTitle={item => item.data.title}
-          viewState={{}}
-          canDragAndDrop={false}
-          canDropOnFolder={false}
-          canReorderItems={false}
-          onExpandItem={item => {
-            if (item.isFolder && !expandedFolders.has(item.data.path)) {
-              handleFolderExpand(item.data.path);
-            }
-          }}
-        >
-          <Tree
-            treeId="file-explorer-tree"
-            rootItem={rootId}
-            treeLabel="File Explorer"
-            renderItemTitle={renderItem}
-            aria-label="File Explorer"
-          />
-        </UncontrolledTreeEnvironment>
+        <div>
+          {/* Up Navigation (if not in root) */}
+          {currentPath && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                color: '#666',
+                fontSize: '14px',
+                borderBottom: '1px solid #eee',
+                marginBottom: '5px'
+              }}
+              onClick={() => handleFolderClick('..')}
+              title="Go up one level"
+            >
+              {UpFolderIcon}
+              ..
+            </div>
+          )}
+
+          {/* Files and Folders */}
+          {items.map((item) => (
+            <div
+              key={item.filePath}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '4px 8px',
+                cursor: item.isFolder ? 'pointer' : 'pointer',
+                background: selectedFile === (currentPath ? `${currentPath}/${item.filePath}` : item.filePath) ? '#e0e0e0' : 'transparent',
+                fontWeight: item.isFolder ? 'bold' : 'normal',
+                color: item.isFolder ? '#b59b3a' : '#222',
+                fontSize: '14px',
+                borderRadius: '3px',
+                marginBottom: '2px'
+              }}
+              onClick={() => item.isFolder ? handleFolderClick(item.filePath) : handleFileClick(item.filePath)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                {item.isFolder ? FolderIcon : FileIcon}
+                {item.filePath}
+              </div>
+              <span
+                onClick={e => {
+                  e.stopPropagation();
+                  handleDeleteItem(item.filePath);
+                }}
+                style={{ 
+                  marginLeft: 8, 
+                  padding: '2px 5px',
+                  cursor: 'pointer',
+                  color: '#999',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+                title="Delete"
+              >
+                ×
+              </span>
+            </div>
+          ))}
+
+          {items.length === 0 && !currentPath && (
+            <div style={{ color: '#666', fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>
+              No files or folders found
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

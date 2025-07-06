@@ -63,21 +63,20 @@ func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 	}
 
 	for _, entry := range entries {
-		relPath := entry.Name()
-		if parent != "" {
-			relPath = filepath.Join(parent, entry.Name())
-		}
+		// Always return just the filename for display purposes
+		// The frontend will construct the full path when needed
+		filename := entry.Name()
 
 		if entry.IsDir() {
 			// It's a folder
 			docs = append(docs, models.DocumentMetadata{
-				FilePath: relPath,
+				FilePath: filename,
 				IsFolder: true,
 			})
 		} else {
 			// It's a file - don't load content, just metadata
 			docs = append(docs, models.DocumentMetadata{
-				FilePath: relPath,
+				FilePath: filename,
 				IsFolder: false,
 			})
 		}

@@ -1,9 +1,13 @@
 package services
 
 import (
+	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"texteditor-backend/models"
 )
 
@@ -83,4 +87,158 @@ func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 	}
 
 	return docs, nil
+}
+
+func SearchDocuments(req models.SearchRequest) ([]models.SearchResult, error) {
+	var results []models.SearchResult
+
+	// Validate search folder is not higher than root
+	searchPath := req.SearchFolder
+	if searchPath != "" {
+		// Check if the path tries to go above the root directory
+		absSearchPath := filepath.Join(getDataDir(), searchPath)
+		absDataDir, _ := filepath.Abs(getDataDir())
+		absSearchPath, _ = filepath.Abs(absSearchPath)
+
+		if !strings.HasPrefix(absSearchPath, absDataDir) {
+			return nil, fmt.Errorf("search folder cannot be higher than root directory")
+		}
+	}
+
+	// Determine the base path for search
+	basePath := getDataDir()
+	if searchPath != "" {
+		basePath = filepath.Join(getDataDir(), searchPath)
+	}
+
+	// Walk through the directory recursively
+	err := filepath.Walk(basePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path from data directory
+		relPath, err := filepath.Rel(getDataDir(), path)
+		if err != nil {
+			return err
+		}
+
+		// Search in the file
+		matches, err := searchInFile(path, req)
+		if err != nil {
+			return err
+		}
+
+		if len(matches) > 0 {
+			results = append(results, models.SearchResult{
+				FilePath: relPath,
+				Matches:  matches,
+			})
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func searchInFile(filePath string, req models.SearchRequest) ([]models.SearchMatch, error) {
+	var matches []models.SearchMatch
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNumber := 1
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		var lineMatches []models.SearchMatch
+
+		switch req.SearchMode {
+		case "plain":
+			lineMatches = searchPlainText(line, req.Query, req.CaseSensitive, lineNumber)
+		case "regex":
+			lineMatches = searchRegex(line, req.Query, req.CaseSensitive, lineNumber)
+		}
+
+		matches = append(matches, lineMatches...)
+		lineNumber++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+
+func searchPlainText(line, query string, caseSensitive bool, lineNumber int) []models.SearchMatch {
+	var matches []models.SearchMatch
+
+	searchLine := line
+	searchQuery := query
+
+	if !caseSensitive {
+		searchLine = strings.ToLower(line)
+		searchQuery = strings.ToLower(query)
+	}
+
+	start := 0
+	for {
+		pos := strings.Index(searchLine[start:], searchQuery)
+		if pos == -1 {
+			break
+		}
+
+		actualPos := start + pos
+		matches = append(matches, models.SearchMatch{
+			LineNumber: lineNumber,
+			LineText:   line,
+			StartPos:   actualPos,
+			EndPos:     actualPos + len(query),
+		})
+
+		start = actualPos + 1
+	}
+
+	return matches
+}
+
+func searchRegex(line, pattern string, caseSensitive bool, lineNumber int) []models.SearchMatch {
+	var matches []models.SearchMatch
+
+	flags := ""
+	if !caseSensitive {
+		flags = "(?i)"
+	}
+
+	regex, err := regexp.Compile(flags + pattern)
+	if err != nil {
+		return matches // Return empty matches for invalid regex
+	}
+
+	allMatches := regex.FindAllStringIndex(line, -1)
+	for _, match := range allMatches {
+		matches = append(matches, models.SearchMatch{
+			LineNumber: lineNumber,
+			LineText:   line,
+			StartPos:   match[0],
+			EndPos:     match[1],
+		})
+	}
+
+	return matches
 }

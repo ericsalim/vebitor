@@ -9,6 +9,25 @@ export interface Document extends DocumentMetadata {
   content: string;
 }
 
+export interface SearchMatch {
+  lineNumber: number;
+  lineText: string;
+  startPos: number;
+  endPos: number;
+}
+
+export interface SearchResult {
+  filePath: string;
+  matches: SearchMatch[];
+}
+
+export interface SearchRequest {
+  query: string;
+  searchMode: 'plain' | 'regex';
+  caseSensitive: boolean;
+  searchFolder: string;
+}
+
 export const documentsApi = {
   async getDocument(filePath: string): Promise<Document> {
     const response = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filePath)}`);
@@ -63,6 +82,23 @@ export const documentsApi = {
     if (!response.ok) {
       throw new Error(`Failed to list documents: ${response.statusText}`);
     }
+    return response.json();
+  },
+
+  async searchDocuments(request: SearchRequest): Promise<SearchResult[]> {
+    const response = await fetch(`${API_BASE_URL}/documents/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Search failed');
+    }
+
     return response.json();
   },
 }; 

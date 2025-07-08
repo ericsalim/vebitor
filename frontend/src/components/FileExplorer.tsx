@@ -4,6 +4,7 @@ import { documentsApi, DocumentMetadata } from '../api/documents';
 interface FileExplorerProps {
   onFileSelect: (filePath: string) => void;
   selectedFile?: string;
+  onFolderChange?: (folderPath: string) => void;
 }
 
 // SVG Icons
@@ -25,7 +26,7 @@ const UpFolderIcon = (
   </svg>
 );
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile }) => {
+const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange }) => {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [items, setItems] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile 
 
   useEffect(() => {
     loadCurrentDirectory(currentPath);
-  }, [currentPath]);
+    // Notify parent component of folder change
+    if (onFolderChange) {
+      onFolderChange(currentPath);
+    }
+  }, [currentPath, onFolderChange]);
 
   const handleFolderClick = (folderPath: string) => {
     if (folderPath === '..') {

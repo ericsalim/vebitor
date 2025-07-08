@@ -1,0 +1,263 @@
+.search-panel {
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-header h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.search-controls {
+  margin-bottom: 20px;
+}
+
+.search-input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-button {
+  padding: 10px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.search-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.search-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.search-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.search-mode {
+  display: flex;
+  gap: 20px;
+}
+
+.search-mode label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.search-mode input[type="radio"] {
+  margin: 0;
+}
+
+.search-options-row {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.case-sensitive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.case-sensitive input[type="checkbox"] {
+  margin: 0;
+}
+
+.search-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-folder label {
+  font-size: 14px;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.folder-input {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  min-width: 200px;
+}
+
+.folder-input:focus {
+  border-color: #3b82f6;
+}
+
+.search-error {
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.search-results {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 15px;
+}
+
+.search-summary {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 15px;
+  padding: 8px 0;
+}
+
+.search-result-file {
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.file-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 15px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.file-header:hover {
+  background: #f3f4f6;
+}
+
+.file-icon {
+  font-size: 16px;
+}
+
+.file-path {
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: #374151;
+}
+
+.match-count {
+  font-size: 12px;
+  color: #6b7280;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.file-matches {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-match {
+  display: flex;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.search-match:last-child {
+  border-bottom: none;
+}
+
+.match-line-number {
+  min-width: 50px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: right;
+  border-right: 1px solid #e5e7eb;
+}
+
+.match-line-content {
+  flex: 1;
+  padding: 8px 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #374151;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.search-line-match {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+.search-no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Scrollbar styling for file matches */
+.file-matches::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-matches::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.file-matches::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.file-matches::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+} 

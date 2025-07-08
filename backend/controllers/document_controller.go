@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strings"
 	"texteditor-backend/models"
 	"texteditor-backend/services"
 
@@ -79,4 +80,32 @@ func ListDocuments(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, docs)
+}
+
+func SearchDocuments(c *gin.Context) {
+	var req models.SearchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate search mode
+	if req.SearchMode != "plain" && req.SearchMode != "regex" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "searchMode must be 'plain' or 'regex'"})
+		return
+	}
+
+	// Validate query is not empty
+	if strings.TrimSpace(req.Query) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "query cannot be empty"})
+		return
+	}
+
+	results, err := services.SearchDocuments(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
 }

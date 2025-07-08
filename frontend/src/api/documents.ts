@@ -99,6 +99,7 @@ export const documentsApi = {
       throw new Error(errorData.error || 'Search failed');
     }
 
-    return response.json();
+    const results = await response.json();
+    return results || [];
   },
 }; 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { documentsApi, SearchResult, SearchRequest } from '../api/documents';
 import './SearchPanel.css';
 
@@ -15,6 +15,11 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
+
+  // Update searchFolder when currentFolder changes
+  useEffect(() => {
+    setSearchFolder(currentFolder);
+  }, [currentFolder]);
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -35,7 +40,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
       };
 
       const searchResults = await documentsApi.searchDocuments(searchRequest);
-      setResults(searchResults);
+      setResults(searchResults || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
@@ -63,7 +68,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
     );
   };
 
-  const totalMatches = results.reduce((sum, result) => sum + result.matches.length, 0);
+  const totalMatches = results?.reduce((sum, result) => sum + result.matches.length, 0) || 0;
 
   return (
     <div className="search-panel">

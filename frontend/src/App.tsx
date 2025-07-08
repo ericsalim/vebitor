@@ -172,47 +172,6 @@ function App() {
           onFolderChange={handleFolderChange}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Toolbar */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            padding: '8px 16px',
-            borderBottom: '1px solid #ccc', 
-            background: '#f5f5f5',
-            gap: '8px'
-          }}>
-            <button
-              onClick={() => setShowSearchPanel(!showSearchPanel)}
-              style={{
-                padding: '6px 12px',
-                background: showSearchPanel ? '#0078d4' : '#fff',
-                color: showSearchPanel ? '#fff' : '#333',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
-              title="Toggle Search Panel (Ctrl+Shift+F)"
-            >
-              🔍 Search
-            </button>
-          </div>
-
-          {/* Search Panel */}
-          {showSearchPanel && (
-            <div style={{ 
-              borderBottom: '1px solid #ccc',
-              background: '#fff',
-              maxHeight: '300px',
-              overflow: 'auto'
-            }}>
-              <SearchPanel
-                currentFolder={currentFolder}
-                onOpenFile={handleFileSelect}
-              />
-            </div>
-          )}
-
           <div style={{ display: 'flex', borderBottom: '1px solid #ccc', background: '#f5f5f5', height: 36 }}>
             {openFiles.map((file) => (
               <div
@@ -282,6 +241,48 @@ function App() {
               </div>
             )}
           </div>
+
+          {/* Search Panel */}
+          {showSearchPanel && (
+            <div style={{ 
+              borderTop: '1px solid #ccc',
+              background: '#fff',
+              maxHeight: '300px',
+              overflow: 'auto'
+            }}>
+              <SearchPanel
+                currentFolder={currentFolder}
+                onOpenFile={handleFileSelect}
+              />
+            </div>
+          )}
+
+          {/* Search Toolbar */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            padding: '8px 16px',
+            borderTop: '1px solid #ccc', 
+            background: '#f5f5f5',
+            gap: '8px'
+          }}>
+            <button
+              onClick={() => setShowSearchPanel(!showSearchPanel)}
+              style={{
+                padding: '6px 12px',
+                background: showSearchPanel ? '#0078d4' : '#fff',
+                color: showSearchPanel ? '#fff' : '#333',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+              title="Toggle Search Panel (Ctrl+Shift+F)"
+            >
+              🔍 Search
+            </button>
+          </div>
+
           {pendingClose && (
             <div style={{
               position: 'fixed',

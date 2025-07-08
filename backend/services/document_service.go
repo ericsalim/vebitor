@@ -148,6 +148,11 @@ func SearchDocuments(req models.SearchRequest) ([]models.SearchResult, error) {
 		return nil, err
 	}
 
+	// Ensure we always return an empty slice instead of nil
+	if results == nil {
+		results = []models.SearchResult{}
+	}
+
 	return results, nil
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { documentsApi, SearchResult, SearchRequest } from '../api/documents';
+import FolderBrowser from './FolderBrowser';
 import './SearchPanel.css';
 
 interface SearchPanelProps {
@@ -15,6 +16,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
+  const [showFolderBrowser, setShowFolderBrowser] = useState(false);
 
   // Update searchFolder when currentFolder changes
   useEffect(() => {
@@ -52,6 +54,10 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
     if (e.key === 'Enter') {
       handleSearch();
     }
+  };
+
+  const handleFolderSelect = (folderPath: string) => {
+    setSearchFolder(folderPath);
   };
 
   const highlightMatch = (lineText: string, startPos: number, endPos: number) => {
@@ -129,13 +135,33 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
 
             <div className="search-folder">
               <label>Search in folder:</label>
-              <input
-                type="text"
-                value={searchFolder}
-                onChange={(e) => setSearchFolder(e.target.value)}
-                placeholder="Leave empty for root"
-                className="folder-input"
-              />
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <input
+                  type="text"
+                  value={searchFolder}
+                  onChange={(e) => setSearchFolder(e.target.value)}
+                  placeholder="Leave empty for root"
+                  className="folder-input"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  onClick={() => setShowFolderBrowser(true)}
+                  className="folder-browse-button"
+                  title="Browse folders"
+                >
+                  📁 Browse
+                </button>
+              </div>
+              {searchFolder && (
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#666', 
+                  marginTop: '2px',
+                  fontStyle: 'italic'
+                }}>
+                  Will search in: {searchFolder || 'Root'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -181,6 +207,14 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ currentFolder, onOpenFile }) 
           No matches found
         </div>
       )}
+
+      {/* Folder Browser Modal */}
+      <FolderBrowser
+        isOpen={showFolderBrowser}
+        onClose={() => setShowFolderBrowser(false)}
+        onSelectFolder={handleFolderSelect}
+        currentPath={currentFolder}
+      />
     </div>
   );
 };

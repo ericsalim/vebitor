@@ -129,6 +129,22 @@
   border-color: #3b82f6;
 }
 
+.folder-browse-button {
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.folder-browse-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
 .search-error {
   padding: 12px;
   background: #fef2f2;

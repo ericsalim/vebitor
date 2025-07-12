@@ -1,11 +1,17 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"os"
-	"github.com/gin-gonic/gin"
 	"texteditor-backend/routes"
+
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
+
+//go:embed static
+var staticFiles embed.FS
 
 func main() {
 	// Set the user data and app data directories
@@ -17,7 +23,14 @@ func main() {
 	// Enable CORS for frontend-backend communication
 	r.Use(cors.Default())
 
-	routes.RegisterRoutes(r)
+	// Serve static files (embedded frontend)
+	staticFS, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		panic("Failed to create static filesystem: " + err.Error())
+	}
+
+	// Register routes (includes static file handling in NoRoute)
+	routes.RegisterRoutes(r, staticFS)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -25,4 +38,4 @@ func main() {
 	}
 
 	r.Run(":" + port) // listen and serve on the configured port
-} 
+}

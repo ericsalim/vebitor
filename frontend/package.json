@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/app",
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",
     "@codemirror/commands": "^6.8.1",
@@ -30,6 +31,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:embed": "react-scripts build && cp -r build/* ../backend/static/",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

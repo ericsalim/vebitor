@@ -2,6 +2,7 @@ package services
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -246,4 +247,19 @@ func searchRegex(line, pattern string, caseSensitive bool, lineNumber int) []mod
 	}
 
 	return matches
+}
+
+var ErrFileExists = errors.New("file_exists")
+
+func RenameDocument(oldPath, newPath string) error {
+	oldAbs := filepath.Join(getDataDir(), oldPath)
+	newAbs := filepath.Join(getDataDir(), newPath)
+	// Ensure parent directory for new path exists
+	if err := os.MkdirAll(filepath.Dir(newAbs), 0755); err != nil {
+		return err
+	}
+	if _, err := os.Stat(newAbs); err == nil {
+		return ErrFileExists
+	}
+	return os.Rename(oldAbs, newAbs)
 }

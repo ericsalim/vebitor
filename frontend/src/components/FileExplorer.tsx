@@ -5,6 +5,7 @@ interface FileExplorerProps {
   onFileSelect: (filePath: string) => void;
   selectedFile?: string;
   onFolderChange?: (folderPath: string) => void;
+  onFileRename?: (oldPath: string, newPath: string) => void;
 }
 
 // SVG Icons
@@ -26,12 +27,15 @@ const UpFolderIcon = (
   </svg>
 );
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange }) => {
+const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange, onFileRename }) => {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [items, setItems] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState('');
+  const [renamingFile, setRenamingFile] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState<string>("");
+  const listRef = React.useRef<HTMLDivElement>(null);
 
   const loadCurrentDirectory = async (path: string = '') => {
     setLoading(true);
@@ -55,6 +59,58 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
       onFolderChange(currentPath);
     }
   }, [currentPath, onFolderChange]);
+
+  // Handle F2 for renaming
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F2" && selectedFile && !renamingFile) {
+        setRenamingFile(selectedFile);
+        const name = selectedFile.split("/").pop() || selectedFile;
+        setRenameValue(name);
+      }
+      if (e.key === "Escape" && renamingFile) {
+        setRenamingFile(null);
+        setRenameValue("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedFile, renamingFile]);
+
+  // Handle rename submit
+  const handleRenameSubmit = async (oldPath: string, newName: string) => {
+    if (!newName.trim() || oldPath.split("/").pop() === newName.trim()) {
+      setRenamingFile(null);
+      setRenameValue("");
+      return;
+    }
+    const parent = oldPath.split("/").slice(0, -1).join("/");
+    const newPath = parent ? `${parent}/${newName.trim()}` : newName.trim();
+    try {
+      await documentsApi.renameDocument(oldPath, newPath);
+      setRenamingFile(null);
+      setRenameValue("");
+      loadCurrentDirectory(currentPath);
+      if (selectedFile === oldPath) {
+        onFileSelect(newPath);
+      }
+      if (onFileRename) {
+        onFileRename(oldPath, newPath);
+      }
+    } catch (error: any) {
+      if (error instanceof Response) {
+        // Try to parse error response
+        try {
+          const data = await error.json();
+          if (data && data.code === "file_exists") {
+            setError("Failed to rename file. Error code: file_exists");
+            return;
+          }
+        } catch {}
+      }
+      setError("Failed to rename file. Make sure the backend is running.");
+    }
+  };
 
   const handleFolderClick = (folderPath: string) => {
     if (folderPath === '..') {
@@ -110,7 +166,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
   };
 
   return (
-    <div style={{ width: '250px', borderRight: '1px solid #ccc', padding: '10px', height: '100%', overflow: 'auto' }}>
+    <div
+      style={{ width: '250px', borderRight: '1px solid #ccc', padding: '10px', height: '100%', overflow: 'auto' }}
+      ref={listRef}
+    >
       <h3>Vebitor</h3>
       
       {/* Current Path Display */}
@@ -180,47 +239,69 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
           )}
 
           {/* Files and Folders */}
-          {items.map((item) => (
-            <div
-              key={item.filePath}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '4px 8px',
-                cursor: item.isFolder ? 'pointer' : 'pointer',
-                background: selectedFile === (currentPath ? `${currentPath}/${item.filePath}` : item.filePath) ? '#e0e0e0' : 'transparent',
-                fontWeight: 'normal',
-                color: '#222',
-                fontSize: '14px',
-                borderRadius: '3px',
-                marginBottom: '2px'
-              }}
-              onClick={() => item.isFolder ? handleFolderClick(item.filePath) : handleFileClick(item.filePath)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                {item.isFolder ? FolderIcon : FileIcon}
-                {item.filePath}
-              </div>
-              <span
-                onClick={e => {
-                  e.stopPropagation();
-                  handleDeleteItem(item.filePath);
-                }}
-                style={{ 
-                  marginLeft: 8, 
-                  padding: '2px 5px',
-                  cursor: 'pointer',
-                  color: '#999',
+          {items.map((item) => {
+            const fullPath = currentPath ? `${currentPath}/${item.filePath}` : item.filePath;
+            const isRenaming = renamingFile === fullPath;
+            return (
+              <div
+                key={item.filePath}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '4px 8px',
+                  cursor: item.isFolder ? 'pointer' : 'pointer',
+                  background: selectedFile === fullPath ? '#e0e0e0' : 'transparent',
+                  fontWeight: 'normal',
+                  color: '#222',
                   fontSize: '14px',
-                  fontWeight: 'bold'
+                  borderRadius: '3px',
+                  marginBottom: '2px'
                 }}
-                title="Delete"
+                onClick={() => item.isFolder ? handleFolderClick(item.filePath) : handleFileClick(item.filePath)}
               >
-                ×
-              </span>
-            </div>
-          ))}
+                <span style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                  {item.isFolder ? FolderIcon : FileIcon}
+                  {isRenaming ? (
+                    <input
+                      type="text"
+                      value={renameValue}
+                      autoFocus
+                      onChange={e => setRenameValue(e.target.value)}
+                      onBlur={() => setRenamingFile(null)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleRenameSubmit(fullPath, renameValue);
+                        } else if (e.key === 'Escape') {
+                          setRenamingFile(null);
+                        }
+                      }}
+                      style={{ fontSize: '14px', flex: 1 }}
+                    />
+                  ) : (
+                    <span>{item.filePath}</span>
+                  )}
+                </span>
+                <span
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleDeleteItem(item.filePath);
+                  }}
+                  style={{ 
+                    marginLeft: 8, 
+                    padding: '2px 5px',
+                    cursor: 'pointer',
+                    color: '#999',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                  title="Delete"
+                >
+                  ×
+                </span>
+              </div>
+            );
+          })}
 
           {items.length === 0 && !currentPath && (
             <div style={{ color: '#666', fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>

@@ -3,6 +3,7 @@ import './App.css';
 import FileExplorer from './components/FileExplorer';
 import TextEditor from './components/TextEditor';
 import SearchPanel from './components/SearchPanel';
+import MenuBar from "./components/MenuBar";
 
 interface OpenFile {
   filePath: string;
@@ -130,6 +131,26 @@ function App() {
     setPendingClose(null);
   };
 
+  // Handle file rename (update openFiles and activeFile)
+  const handleFileRename = (oldPath: string, newPath: string) => {
+    setOpenFiles((files) => {
+      // Map oldPath to newPath
+      const renamed = files.map(f => f.filePath === oldPath ? { ...f, filePath: newPath } : f);
+      // Remove duplicates by filePath, keeping the last occurrence (the renamed one)
+      const unique: OpenFile[] = [];
+      const seen = new Set<string>();
+      for (let i = renamed.length - 1; i >= 0; i--) {
+        if (!seen.has(renamed[i].filePath)) {
+          unique.unshift(renamed[i]);
+          seen.add(renamed[i].filePath);
+        }
+      }
+      return unique;
+    });
+    setActiveFile((current) => current === oldPath ? newPath : current);
+    // updateSession will be called on next file select/tab click
+  };
+
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -165,11 +186,13 @@ function App() {
 
   return (
     <div className="App">
+      <MenuBar />
       <main style={{ display: 'flex', height: '100vh' }}>
         <FileExplorer
           onFileSelect={handleFileSelect}
           selectedFile={activeFile}
           onFolderChange={handleFolderChange}
+          onFileRename={handleFileRename}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', borderBottom: '1px solid #ccc', background: '#f5f5f5', height: 36 }}>

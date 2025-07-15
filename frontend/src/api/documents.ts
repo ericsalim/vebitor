@@ -102,4 +102,17 @@ export const documentsApi = {
     const results = await response.json();
     return results || [];
   },
+
+  async renameDocument(oldPath: string, newPath: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/documents/rename`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ oldPath, newPath }),
+    });
+    if (!response.ok) {
+      throw response; // Throw the Response object for frontend error handling
+    }
+  },
 }; 

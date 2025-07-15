@@ -109,3 +109,29 @@ func SearchDocuments(c *gin.Context) {
 
 	c.JSON(http.StatusOK, results)
 }
+
+func RenameDocument(c *gin.Context) {
+	type RenameRequest struct {
+		OldPath string `json:"oldPath"`
+		NewPath string `json:"newPath"`
+	}
+	var req RenameRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.OldPath == "" || req.NewPath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "oldPath and newPath are required"})
+		return
+	}
+	err := services.RenameDocument(req.OldPath, req.NewPath)
+	if err != nil {
+		if err == services.ErrFileExists {
+			c.JSON(http.StatusConflict, gin.H{"error": "File already exists", "code": "file_exists"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
+}

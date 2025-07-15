@@ -16,7 +16,7 @@ func RegisterRoutes(r *gin.Engine, staticFS fs.FS) {
 		documents.GET("", controllers.ListDocuments)
 		documents.POST("", controllers.CreateDocument)
 		documents.POST("/search", controllers.SearchDocuments)
-
+		documents.POST("/rename", controllers.RenameDocument)
 		// Wildcard routes last (less specific after specific routes)
 		documents.GET("/*filePath", controllers.GetDocument)
 		documents.PUT("/*filePath", controllers.UpdateDocument)

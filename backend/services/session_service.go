@@ -33,7 +33,7 @@ func GetSession() (*models.Session, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Create empty session file if it does not exist
-			session := &models.Session{OpenedFiles: []string{}}
+			session := &models.Session{OpenedFiles: []string{}, WorkingFolder: ""}
 			if err := SaveSession(session); err != nil {
 				return nil, err
 			}
@@ -60,6 +60,8 @@ func GetSession() (*models.Session, error) {
 		}
 	}
 	session.OpenedFiles = filtered
+
+	// DO NOT check if working folder exists. Just return the session as-is.
 	return &session, nil
 }
 

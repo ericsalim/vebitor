@@ -5,7 +5,9 @@ interface FileExplorerProps {
   onFileSelect: (filePath: string) => void;
   selectedFile?: string;
   onFolderChange?: (folderPath: string) => void;
+  onUserFolderChange?: (folderPath: string) => void;
   onFileRename?: (oldPath: string, newPath: string) => void;
+  currentFolder?: string;
 }
 
 // SVG Icons
@@ -27,8 +29,7 @@ const UpFolderIcon = (
   </svg>
 );
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange, onFileRename }) => {
-  const [currentPath, setCurrentPath] = useState<string>('');
+const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange, onUserFolderChange, onFileRename, currentFolder }) => {
   const [items, setItems] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,28 +38,39 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
   const [renameValue, setRenameValue] = useState<string>("");
   const listRef = React.useRef<HTMLDivElement>(null);
 
+  // Load directory and notify parent whenever currentFolder changes
+  useEffect(() => {
+    loadCurrentDirectory(currentFolder || '');
+    if (onFolderChange) {
+      onFolderChange(currentFolder || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFolder]);
+
   const loadCurrentDirectory = async (path: string = '') => {
     setLoading(true);
     setError(null);
     try {
       const docs = await documentsApi.listDocuments(path);
+      if (!docs) {
+        // If docs is null, folder does not exist. Switch to root.
+        if (onUserFolderChange) onUserFolderChange('');
+        if (onFolderChange) onFolderChange('');
+        setItems([]);
+        setLoading(false);
+        return;
+      }
       setItems(docs || []);
     } catch (error) {
-      console.error('Failed to load directory:', error);
+      // If error, also switch to root
+      if (onUserFolderChange) onUserFolderChange('');
+      if (onFolderChange) onFolderChange('');
       setError('Failed to load directory. Make sure the backend is running.');
       setItems([]);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadCurrentDirectory(currentPath);
-    // Notify parent component of folder change
-    if (onFolderChange) {
-      onFolderChange(currentPath);
-    }
-  }, [currentPath, onFolderChange]);
 
   // Handle F2 for renaming
   useEffect(() => {
@@ -90,7 +102,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
       await documentsApi.renameDocument(oldPath, newPath);
       setRenamingFile(null);
       setRenameValue("");
-      loadCurrentDirectory(currentPath);
+      loadCurrentDirectory(currentFolder || '');
       if (selectedFile === oldPath) {
         onFileSelect(newPath);
       }
@@ -112,26 +124,32 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
     }
   };
 
+  // For navigation, use a helper to update the parent (App) with the new folder
   const handleFolderClick = (folderPath: string) => {
+    let newPath = '';
     if (folderPath === '..') {
       // Go up one level
-      const parentPath = currentPath.split('/').slice(0, -1).join('/');
-      setCurrentPath(parentPath);
+      newPath = (currentFolder || '').split('/').slice(0, -1).join('/');
     } else {
       // Enter folder
-      const newPath = currentPath ? `${currentPath}/${folderPath}` : folderPath;
-      setCurrentPath(newPath);
+      newPath = currentFolder ? `${currentFolder}/${folderPath}` : folderPath;
+    }
+    if (onUserFolderChange) {
+      onUserFolderChange(newPath);
+    }
+    if (onFolderChange) {
+      onFolderChange(newPath);
     }
   };
 
   const handleFileClick = (filePath: string) => {
-    const fullPath = currentPath ? `${currentPath}/${filePath}` : filePath;
+    const fullPath = currentFolder ? `${currentFolder}/${filePath}` : filePath;
     onFileSelect(fullPath);
   };
 
   const handleCreateFile = async () => {
     if (!newFileName.trim()) return;
-    const filePath = currentPath ? `${currentPath}/${newFileName.trim()}` : newFileName.trim();
+    const filePath = currentFolder ? `${currentFolder}/${newFileName.trim()}` : newFileName.trim();
     try {
       await documentsApi.createDocument({
         filePath,
@@ -139,7 +157,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
         isFolder: false,
       });
       setNewFileName('');
-      loadCurrentDirectory(currentPath);
+      loadCurrentDirectory(currentFolder || '');
     } catch (error) {
       console.error('Failed to create file:', error);
       setError('Failed to create file. Make sure the backend is running.');
@@ -147,11 +165,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
   };
 
   const handleDeleteItem = async (itemPath: string) => {
-    const fullPath = currentPath ? `${currentPath}/${itemPath}` : itemPath;
+    const fullPath = currentFolder ? `${currentFolder}/${itemPath}` : itemPath;
     if (!window.confirm(`Are you sure you want to delete ${fullPath}?`)) return;
     try {
       await documentsApi.deleteDocument(fullPath);
-      loadCurrentDirectory(currentPath);
+      loadCurrentDirectory(currentFolder || '');
       if (selectedFile === fullPath) {
         onFileSelect('');
       }
@@ -161,8 +179,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
     }
   };
 
+  // Update all other references to currentPath to use currentFolder
   const getCurrentPathDisplay = () => {
-    return currentPath || 'Root';
+    return currentFolder || 'Root';
   };
 
   return (
@@ -218,7 +237,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
       ) : (
         <div>
           {/* Up Navigation (if not in root) */}
-          {currentPath && (
+          {currentFolder && (
             <div
               style={{
                 display: 'flex',
@@ -240,7 +259,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
 
           {/* Files and Folders */}
           {items.map((item) => {
-            const fullPath = currentPath ? `${currentPath}/${item.filePath}` : item.filePath;
+            const fullPath = currentFolder ? `${currentFolder}/${item.filePath}` : item.filePath;
             const isRenaming = renamingFile === fullPath;
             return (
               <div
@@ -303,7 +322,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
             );
           })}
 
-          {items.length === 0 && !currentPath && (
+          {items.length === 0 && !currentFolder && (
             <div style={{ color: '#666', fontSize: '12px', textAlign: 'center', marginTop: '20px' }}>
               No files or folders found
             </div>

@@ -20,13 +20,14 @@ function App() {
   const [currentFolder, setCurrentFolder] = useState('');
 
   // Helper to update session
-  const updateSession = (openedFiles: OpenFile[], lastActiveFile: string) => {
+  const updateSession = (openedFiles: OpenFile[], lastActiveFile: string, workingFolder?: string) => {
     fetch('http://localhost:8080/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         openedFiles: openedFiles.map(f => f.filePath),
         lastActiveFile,
+        workingFolder: workingFolder !== undefined ? workingFolder : currentFolder,
       })
     }).catch(err => console.error('Session save error:', err));
   };
@@ -45,6 +46,13 @@ function App() {
     }
   };
 
+  // User-initiated folder change handler
+  const handleUserFolderChange = (folderPath: string) => {
+    setCurrentFolder(folderPath);
+    updateSession(openFiles, activeFile, folderPath);
+  };
+
+  // For compatibility, keep handleFolderChange for internal sync (no session update)
   const handleFolderChange = (folderPath: string) => {
     setCurrentFolder(folderPath);
   };
@@ -170,8 +178,21 @@ function App() {
   // Fetch session on startup
   useEffect(() => {
     fetch('http://localhost:8080/session')
-      .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch session'))
+      .then(async res => {
+        if (!res.ok) {
+          try {
+            const data = await res.json();
+            if (data && data.code === 'working_folder_not_found') {
+              setCurrentFolder(''); // open root
+              return null;
+            }
+          } catch {}
+          throw new Error('Failed to fetch session');
+        }
+        return res.json();
+      })
       .then((session) => {
+        if (!session) return;
         if (session && Array.isArray(session.openedFiles)) {
           setOpenFiles(session.openedFiles.map((filePath: string) => ({ filePath, dirty: false })));
           if (session.lastActiveFile && session.openedFiles.includes(session.lastActiveFile)) {
@@ -179,6 +200,9 @@ function App() {
           } else if (session.openedFiles.length > 0) {
             setActiveFile(session.openedFiles[0]);
           }
+        }
+        if (session && typeof session.workingFolder === 'string') {
+          setCurrentFolder(session.workingFolder);
         }
       })
       .catch(err => console.error('Session fetch error:', err));
@@ -192,7 +216,9 @@ function App() {
           onFileSelect={handleFileSelect}
           selectedFile={activeFile}
           onFolderChange={handleFolderChange}
+          onUserFolderChange={handleUserFolderChange}
           onFileRename={handleFileRename}
+          currentFolder={currentFolder}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', borderBottom: '1px solid #ccc', background: '#f5f5f5', height: 36 }}>

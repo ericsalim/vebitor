@@ -76,6 +76,10 @@ func ListDocuments(c *gin.Context) {
 	parent := c.Query("parent")
 	docs, err := services.ListDocuments(parent)
 	if err != nil {
+		if err == services.ErrFolderNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Folder not found", "code": "folder_not_found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

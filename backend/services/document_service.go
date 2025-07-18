@@ -43,6 +43,8 @@ func DeleteDocument(filePath string) error {
 	return os.Remove(absPath)
 }
 
+var ErrFolderNotFound = errors.New("folder_not_found")
+
 func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 	// Ensure the userdata directory exists
 	if err := os.MkdirAll(getDataDir(), 0755); err != nil {
@@ -55,9 +57,9 @@ func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 	// If parent is specified, use it as the base path
 	if parent != "" {
 		basePath = filepath.Join(getDataDir(), parent)
-		// Ensure the parent directory exists
-		if err := os.MkdirAll(basePath, 0755); err != nil {
-			return nil, err
+		// Check if the parent directory exists
+		if stat, err := os.Stat(basePath); err != nil || !stat.IsDir() {
+			return nil, ErrFolderNotFound
 		}
 	}
 
@@ -68,18 +70,13 @@ func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 	}
 
 	for _, entry := range entries {
-		// Always return just the filename for display purposes
-		// The frontend will construct the full path when needed
 		filename := entry.Name()
-
 		if entry.IsDir() {
-			// It's a folder
 			docs = append(docs, models.DocumentMetadata{
 				FilePath: filename,
 				IsFolder: true,
 			})
 		} else {
-			// It's a file - don't load content, just metadata
 			docs = append(docs, models.DocumentMetadata{
 				FilePath: filename,
 				IsFolder: false,
@@ -87,6 +84,10 @@ func ListDocuments(parent string) ([]models.DocumentMetadata, error) {
 		}
 	}
 
+	// After populating docs, ensure it's not nil
+	if docs == nil {
+		docs = []models.DocumentMetadata{}
+	}
 	return docs, nil
 }
 

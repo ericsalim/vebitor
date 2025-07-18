@@ -61,7 +61,20 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
         return;
       }
       setItems(docs || []);
-    } catch (error) {
+    } catch (error: any) {
+      // Handle folder_not_found error from backend
+      if (error instanceof Response && error.status === 404) {
+        try {
+          const data = await error.json();
+          if (data && data.code === 'folder_not_found') {
+            if (onUserFolderChange) onUserFolderChange('');
+            if (onFolderChange) onFolderChange('');
+            setItems([]);
+            setLoading(false);
+            return;
+          }
+        } catch {}
+      }
       // If error, also switch to root
       if (onUserFolderChange) onUserFolderChange('');
       if (onFolderChange) onFolderChange('');

@@ -34,7 +34,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
   const [items, setItems] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newFileName, setNewFileName] = useState('');
   const [renamingFile, setRenamingFile] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState<string>("");
   const listRef = React.useRef<HTMLDivElement>(null);
@@ -167,23 +166,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
     onFileSelect(fullPath);
   };
 
-  const handleCreateFile = async () => {
-    if (!newFileName.trim()) return;
-    const filePath = currentFolder ? `${currentFolder}/${newFileName.trim()}` : newFileName.trim();
-    try {
-      await documentsApi.createDocument({
-        filePath,
-        content: '// New file\n',
-        isFolder: false,
-      });
-      setNewFileName('');
-      loadCurrentDirectory(currentFolder || '');
-    } catch (error) {
-      console.error('Failed to create file:', error);
-      setError('Failed to create file. Make sure the backend is running.');
-    }
-  };
-
   const handleDeleteItem = async (itemPath: string) => {
     const fullPath = currentFolder ? `${currentFolder}/${itemPath}` : itemPath;
     if (!window.confirm(`Are you sure you want to delete ${fullPath}?`)) return;
@@ -243,20 +225,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
           {error}
         </div>
       )}
-
-      {/* Create File Section */}
-      <div style={{ marginBottom: '10px' }}>
-        <input
-          type="text"
-          value={newFileName}
-          onChange={e => setNewFileName(e.target.value)}
-          placeholder="Enter filename (e.g., test.txt, script.js)"
-          style={{ width: '100%', marginBottom: '5px' }}
-        />
-        <button onClick={handleCreateFile} style={{ width: '100%' }}>
-          Create File
-        </button>
-      </div>
 
       {/* Navigation and File List */}
       {loading ? (
@@ -328,23 +296,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
                     <span>{item.filePath}</span>
                   )}
                 </span>
-                <span
+                <button
                   onClick={e => {
                     e.stopPropagation();
                     handleDeleteItem(item.filePath);
                   }}
-                  style={{ 
-                    marginLeft: 8, 
-                    padding: '2px 5px',
-                    cursor: 'pointer',
-                    color: '#999',
-                    fontSize: '14px',
-                    fontWeight: 'bold'
-                  }}
-                  title="Delete"
+                  style={{ marginLeft: 8 }}
                 >
-                  ×
-                </span>
+                  Delete
+                </button>
               </div>
             );
           })}

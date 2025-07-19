@@ -166,21 +166,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
     onFileSelect(fullPath);
   };
 
-  const handleDeleteItem = async (itemPath: string) => {
-    const fullPath = currentFolder ? `${currentFolder}/${itemPath}` : itemPath;
-    if (!window.confirm(`Are you sure you want to delete ${fullPath}?`)) return;
-    try {
-      await documentsApi.deleteDocument(fullPath);
-      loadCurrentDirectory(currentFolder || '');
-      if (selectedFile === fullPath) {
-        onFileSelect('');
-      }
-    } catch (error) {
-      console.error('Failed to delete item:', error);
-      setError('Failed to delete item. Make sure the backend is running.');
-    }
-  };
-
   // Update all other references to currentPath to use currentFolder
   const getCurrentPathDisplay = () => {
     return currentFolder || 'Root';
@@ -296,15 +281,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
                     <span>{item.filePath}</span>
                   )}
                 </span>
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    handleDeleteItem(item.filePath);
-                  }}
-                  style={{ marginLeft: 8 }}
-                >
-                  Delete
-                </button>
               </div>
             );
           })}

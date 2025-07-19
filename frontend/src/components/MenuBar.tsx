@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import "./MenuBar.css";
 
-const MenuBar: React.FC = () => {
+interface MenuBarProps {
+  onNewFile?: () => void;
+}
+
+const MenuBar: React.FC<MenuBarProps> = ({ onNewFile }) => {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
 
   return (
@@ -14,7 +18,15 @@ const MenuBar: React.FC = () => {
         File
         {fileMenuOpen && (
           <div className="menu-dropdown">
-            {/* Empty for now */}
+            <div
+              className="menu-dropdown-item"
+              onClick={() => {
+                setFileMenuOpen(false);
+                if (onNewFile) onNewFile();
+              }}
+            >
+              New File
+            </div>
           </div>
         )}
       </div>

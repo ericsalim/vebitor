@@ -4,6 +4,7 @@ import FileExplorer from './components/FileExplorer';
 import TextEditor from './components/TextEditor';
 import SearchPanel from './components/SearchPanel';
 import MenuBar from "./components/MenuBar";
+import { documentsApi } from './api/documents';
 
 interface OpenFile {
   filePath: string;
@@ -18,6 +19,7 @@ function App() {
   const [globalSearchMode, setGlobalSearchMode] = useState<'find' | 'replace'>('find');
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [currentFolder, setCurrentFolder] = useState('');
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   // Helper to update session
   const updateSession = (openedFiles: OpenFile[], lastActiveFile: string, workingFolder?: string) => {
@@ -159,6 +161,32 @@ function App() {
     // updateSession will be called on next file select/tab click
   };
 
+  const handleNewFile = async () => {
+    // Get list of files in current folder
+    let files: string[] = [];
+    try {
+      const docs = await documentsApi.listDocuments(currentFolder);
+      files = docs.filter(d => !d.isFolder).map(d => d.filePath);
+    } catch {
+      // ignore
+    }
+    // Find next available 'New File N.txt'
+    let n = 1;
+    let newFileName = `New File 1.txt`;
+    while (files.includes(newFileName)) {
+      n++;
+      newFileName = `New File ${n}.txt`;
+    }
+    const filePath = currentFolder ? `${currentFolder}/${newFileName}` : newFileName;
+    try {
+      await documentsApi.createDocument({ filePath, content: '', isFolder: false });
+      handleFileSelect(filePath);
+      setRefreshSignal((s) => s + 1); // trigger FileExplorer refresh
+    } catch (e) {
+      alert('Failed to create new file.');
+    }
+  };
+
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -210,7 +238,7 @@ function App() {
 
   return (
     <div className="App">
-      <MenuBar />
+      <MenuBar onNewFile={handleNewFile} />
       <main style={{ display: 'flex', height: '100vh' }}>
         <FileExplorer
           onFileSelect={handleFileSelect}
@@ -219,6 +247,7 @@ function App() {
           onUserFolderChange={handleUserFolderChange}
           onFileRename={handleFileRename}
           currentFolder={currentFolder}
+          refreshSignal={refreshSignal}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', borderBottom: '1px solid #ccc', background: '#f5f5f5', height: 36 }}>

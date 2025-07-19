@@ -32,4 +32,13 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   z-index: 100;
   color: #222;
+}
+
+.menu-dropdown-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  color: #222;
+}
+.menu-dropdown-item:hover {
+  background: #e0e0e0;
 } 

@@ -8,6 +8,7 @@ interface FileExplorerProps {
   onUserFolderChange?: (folderPath: string) => void;
   onFileRename?: (oldPath: string, newPath: string) => void;
   currentFolder?: string;
+  refreshSignal?: number;
 }
 
 // SVG Icons
@@ -29,7 +30,7 @@ const UpFolderIcon = (
   </svg>
 );
 
-const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange, onUserFolderChange, onFileRename, currentFolder }) => {
+const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile, onFolderChange, onUserFolderChange, onFileRename, currentFolder, refreshSignal }) => {
   const [items, setItems] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFolder]);
+
+  // Reload directory when refreshSignal changes
+  useEffect(() => {
+    loadCurrentDirectory(currentFolder || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
 
   const loadCurrentDirectory = async (path: string = '') => {
     setLoading(true);

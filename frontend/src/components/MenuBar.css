@@ -41,4 +41,10 @@
 }
 .menu-dropdown-item:hover {
   background: #e0e0e0;
+}
+
+.menu-dropdown-item.disabled {
+  pointer-events: none;
+  color: #aaa;
+  background: #f8f8f8;
 } 

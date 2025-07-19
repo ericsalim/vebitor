@@ -101,6 +101,7 @@ function App() {
       });
     }, 0);
     setPendingClose(null);
+    // Removed setSelectedFileInExplorer
   };
 
   const handleSave = (content: string) => {
@@ -187,6 +188,22 @@ function App() {
     }
   };
 
+  const handleDeleteFile = async () => {
+    if (!activeFile) return;
+    if (!window.confirm(`Are you sure you want to delete ${activeFile}?`)) return;
+    try {
+      await documentsApi.deleteDocument(activeFile);
+      setOpenFiles((files) => files.filter(f => f.filePath !== activeFile));
+      setActiveFile('');
+      setRefreshSignal((s) => s + 1);
+    } catch (e) {
+      alert('Failed to delete file.');
+    }
+  };
+
+  // Remove selectedFileInExplorer logic for menu
+
+  // Update selectedFileInExplorer when a file is selected in File Explorer
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -238,7 +255,11 @@ function App() {
 
   return (
     <div className="App">
-      <MenuBar onNewFile={handleNewFile} />
+      <MenuBar
+        onNewFile={handleNewFile}
+        onDeleteFile={handleDeleteFile}
+        deleteFileDisabled={!activeFile}
+      />
       <main style={{ display: 'flex', height: '100vh' }}>
         <FileExplorer
           onFileSelect={handleFileSelect}

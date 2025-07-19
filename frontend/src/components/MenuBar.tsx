@@ -3,9 +3,11 @@ import "./MenuBar.css";
 
 interface MenuBarProps {
   onNewFile?: () => void;
+  onDeleteFile?: () => void;
+  deleteFileDisabled?: boolean;
 }
 
-const MenuBar: React.FC<MenuBarProps> = ({ onNewFile }) => {
+const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onDeleteFile, deleteFileDisabled }) => {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
 
   return (
@@ -26,6 +28,18 @@ const MenuBar: React.FC<MenuBarProps> = ({ onNewFile }) => {
               }}
             >
               New File
+            </div>
+            <div
+              className={`menu-dropdown-item${deleteFileDisabled ? ' disabled' : ''}`}
+              onClick={() => {
+                if (!deleteFileDisabled && onDeleteFile) {
+                  setFileMenuOpen(false);
+                  onDeleteFile();
+                }
+              }}
+              style={{ color: deleteFileDisabled ? '#aaa' : undefined, cursor: deleteFileDisabled ? 'not-allowed' : 'pointer' }}
+            >
+              Delete File
             </div>
           </div>
         )}

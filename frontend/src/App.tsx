@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import FileExplorer from './components/FileExplorer';
-import TextEditor from './components/TextEditor';
+import TextEditor, { TextEditorHandle } from './components/TextEditor';
 import SearchPanel from './components/SearchPanel';
 import MenuBar from "./components/MenuBar";
 import { documentsApi } from './api/documents';
@@ -20,6 +20,9 @@ function App() {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [currentFolder, setCurrentFolder] = useState('');
   const [refreshSignal, setRefreshSignal] = useState(0);
+
+  // Refs for TextEditors
+  const editorRefs = useRef<{ [filePath: string]: React.RefObject<TextEditorHandle | null> }>({});
 
   // Helper to update session
   const updateSession = (openedFiles: OpenFile[], lastActiveFile: string, workingFolder?: string) => {
@@ -253,11 +256,21 @@ function App() {
       .catch(err => console.error('Session fetch error:', err));
   }, []);
 
+  // Save file handler
+  const handleSaveFile = () => {
+    if (!activeFile) return;
+    if (editorRefs.current[activeFile] && editorRefs.current[activeFile].current) {
+      editorRefs.current[activeFile].current!.save();
+    }
+  };
+
   return (
     <div className="App">
       <MenuBar
         onNewFile={handleNewFile}
+        onSaveFile={handleSaveFile}
         onDeleteFile={handleDeleteFile}
+        saveFileDisabled={!activeFile}
         deleteFileDisabled={!activeFile}
       />
       <main style={{ display: 'flex', height: '100vh' }}>
@@ -307,7 +320,11 @@ function App() {
           <div style={{ flex: 1, minHeight: 0 }}>
             {openFiles.length > 0 ? (
               <div style={{ position: 'relative', height: '100%' }}>
-                {openFiles.map((file) => (
+                {openFiles.map((file) => {
+                  if (!editorRefs.current[file.filePath]) {
+                    editorRefs.current[file.filePath] = React.createRef<TextEditorHandle>();
+                  }
+                  return (
                   <div
                     key={file.filePath}
                     style={{
@@ -320,13 +337,15 @@ function App() {
                     }}
                   >
                     <TextEditor
+                        ref={editorRefs.current[file.filePath]}
                       filePath={file.filePath}
                       onSave={handleSave}
                       onLoad={handleLoad}
                       onContentChange={handleContentChange}
                     />
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div style={{
@@ -334,9 +353,8 @@ function App() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '100%',
-                color: '#666',
               }}>
-                Select a file from the explorer to start editing
+                <span style={{ color: '#888' }}>No file open</span>
               </div>
             )}
           </div>

@@ -3,11 +3,13 @@ import "./MenuBar.css";
 
 interface MenuBarProps {
   onNewFile?: () => void;
+  onSaveFile?: () => void;
   onDeleteFile?: () => void;
+  saveFileDisabled?: boolean;
   deleteFileDisabled?: boolean;
 }
 
-const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onDeleteFile, deleteFileDisabled }) => {
+const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onSaveFile, onDeleteFile, saveFileDisabled, deleteFileDisabled }) => {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
 
   return (
@@ -28,6 +30,18 @@ const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onDeleteFile, deleteFileDi
               }}
             >
               New File
+            </div>
+            <div
+              className={`menu-dropdown-item${saveFileDisabled ? ' disabled' : ''}`}
+              onClick={() => {
+                if (!saveFileDisabled && onSaveFile) {
+                  setFileMenuOpen(false);
+                  onSaveFile();
+                }
+              }}
+              style={{ color: saveFileDisabled ? '#aaa' : undefined, cursor: saveFileDisabled ? 'not-allowed' : 'pointer' }}
+            >
+              Save File
             </div>
             <div
               className={`menu-dropdown-item${deleteFileDisabled ? ' disabled' : ''}`}

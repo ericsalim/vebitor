@@ -204,6 +204,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
     return currentFolder || 'Root';
   };
 
+  // Sort items: folders first (by name), then files (by name)
+  const sortedItems = [...items].sort((a, b) => {
+    if (a.isFolder && !b.isFolder) return -1;
+    if (!a.isFolder && b.isFolder) return 1;
+    return a.filePath.localeCompare(b.filePath, undefined, { sensitivity: 'base' });
+  });
+
   return (
     <div
       style={{ width: '250px', borderRight: '1px solid #ccc', padding: '10px', height: '100%', overflow: 'auto' }}
@@ -278,7 +285,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, selectedFile,
           )}
 
           {/* Files and Folders */}
-          {items.map((item) => {
+          {sortedItems.map((item) => {
             const fullPath = currentFolder ? `${currentFolder}/${item.filePath}` : item.filePath;
             const isRenaming = renamingFile === fullPath;
             return (

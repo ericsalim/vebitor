@@ -5,12 +5,14 @@ interface MenuBarProps {
   onNewFile?: () => void;
   onSaveFile?: () => void;
   onDeleteFile?: () => void;
+  onSearch?: () => void;
   saveFileDisabled?: boolean;
   deleteFileDisabled?: boolean;
 }
 
-const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onSaveFile, onDeleteFile, saveFileDisabled, deleteFileDisabled }) => {
+const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onSaveFile, onDeleteFile, onSearch, saveFileDisabled, deleteFileDisabled }) => {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
+  const [searchMenuOpen, setSearchMenuOpen] = useState(false);
 
   return (
     <div className="menu-bar">
@@ -55,6 +57,27 @@ const MenuBar: React.FC<MenuBarProps> = ({ onNewFile, onSaveFile, onDeleteFile, 
             >
               Delete File
             </div>
+          </div>
+        )}
+      </div>
+      <div
+        className="menu-item"
+        onMouseEnter={() => setSearchMenuOpen(true)}
+        onMouseLeave={() => setSearchMenuOpen(false)}
+      >
+        Search
+        {searchMenuOpen && (
+          <div className="menu-dropdown">
+            <div
+              className="menu-dropdown-item"
+              onClick={() => {
+                setSearchMenuOpen(false);
+                if (onSearch) onSearch();
+              }}
+            >
+              Search in Files
+            </div>
+
           </div>
         )}
       </div>

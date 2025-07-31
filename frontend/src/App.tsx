@@ -15,8 +15,7 @@ function App() {
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
   const [activeFile, setActiveFile] = useState<string>('');
   const [pendingClose, setPendingClose] = useState<null | { filePath: string }>(null);
-  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
-  const [globalSearchMode, setGlobalSearchMode] = useState<'find' | 'replace'>('find');
+
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [currentFolder, setCurrentFolder] = useState('');
   const [refreshSignal, setRefreshSignal] = useState(0);
@@ -213,10 +212,6 @@ function App() {
       if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
         e.preventDefault();
         setShowSearchPanel(true);
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
-        e.preventDefault();
-        setGlobalSearchMode('replace');
-        setShowGlobalSearch(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -265,15 +260,16 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="App" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <MenuBar
         onNewFile={handleNewFile}
         onSaveFile={handleSaveFile}
         onDeleteFile={handleDeleteFile}
+        onSearch={() => setShowSearchPanel(true)}
         saveFileDisabled={!activeFile}
         deleteFileDisabled={!activeFile}
       />
-      <main style={{ display: 'flex', height: '100vh' }}>
+      <main style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <FileExplorer
           onFileSelect={handleFileSelect}
           selectedFile={activeFile}
@@ -304,7 +300,7 @@ function App() {
                   userSelect: 'none',
                 }}
               >
-                <span style={{ marginRight: 8 }}>
+                <span style={{ marginRight: 8, fontSize: '13px' }}>
                   {file.filePath}{file.dirty ? ' *' : ''}
                 </span>
                 <span
@@ -359,46 +355,9 @@ function App() {
             )}
           </div>
 
-          {/* Search Panel */}
-          {showSearchPanel && (
-            <div style={{ 
-              borderTop: '1px solid #ccc',
-              background: '#fff',
-              maxHeight: '300px',
-              overflow: 'auto'
-            }}>
-              <SearchPanel
-                currentFolder={currentFolder}
-                onOpenFile={handleFileSelect}
-              />
-            </div>
-          )}
 
-          {/* Search Toolbar */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            padding: '8px 16px',
-            borderTop: '1px solid #ccc', 
-            background: '#f5f5f5',
-            gap: '8px'
-          }}>
-            <button
-              onClick={() => setShowSearchPanel(!showSearchPanel)}
-              style={{
-                padding: '6px 12px',
-                background: showSearchPanel ? '#0078d4' : '#fff',
-                color: showSearchPanel ? '#fff' : '#333',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
-              title="Toggle Search Panel (Ctrl+Shift+F)"
-            >
-              🔍 Search
-            </button>
-          </div>
+
+
 
           {pendingClose && (
             <div style={{
@@ -422,30 +381,50 @@ function App() {
               </div>
             </div>
           )}
-          {/* Global Search/Replace Modal */}
-          {showGlobalSearch && (
-            <div style={{
-              position: 'fixed',
-              top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 2000,
-            }}>
-              <div style={{ background: '#fff', padding: 24, borderRadius: 8, minWidth: 400, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                <div style={{ marginBottom: 16, fontWeight: 'bold' }}>
-                  {globalSearchMode === 'find' ? 'Global Find' : 'Global Replace'}
-                </div>
-                {/* TODO: Add search/replace form and results here */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                  <button onClick={() => setShowGlobalSearch(false)}>Close</button>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
       </main>
+      
+      {/* Search Panel - Full Width Bottom */}
+      {showSearchPanel && (
+        <div style={{ 
+          borderTop: '1px solid #ccc',
+          background: '#fff',
+          maxHeight: '300px',
+          overflow: 'auto',
+          position: 'relative'
+        }}>
+          <button
+            onClick={() => setShowSearchPanel(false)}
+            style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              background: 'transparent',
+              border: 'none',
+              fontSize: '18px',
+              cursor: 'pointer',
+              color: '#666',
+              zIndex: 10,
+              padding: '4px 8px',
+              borderRadius: '4px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f0f0f0';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+            title="Close search panel"
+          >
+            ×
+          </button>
+          <SearchPanel
+            currentFolder={currentFolder}
+            onOpenFile={handleFileSelect}
+          />
+        </div>
+      )}
     </div>
   );
 }

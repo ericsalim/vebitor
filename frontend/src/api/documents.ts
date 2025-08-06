@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:8080';
-
 export interface DocumentMetadata {
   filePath: string;
   isFolder: boolean;
@@ -30,7 +28,7 @@ export interface SearchRequest {
 
 export const documentsApi = {
   async getDocument(filePath: string): Promise<Document> {
-    const response = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filePath)}`);
+    const response = await fetch(`/documents/${encodeURIComponent(filePath)}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch document: ${response.statusText}`);
     }
@@ -38,7 +36,7 @@ export const documentsApi = {
   },
 
   async createDocument(document: Document): Promise<Document> {
-    const response = await fetch(`${API_BASE_URL}/documents`, {
+    const response = await fetch(`/documents`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +50,7 @@ export const documentsApi = {
   },
 
   async updateDocument(filePath: string, content: string): Promise<Document> {
-    const response = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filePath)}`, {
+    const response = await fetch(`/documents/${encodeURIComponent(filePath)}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +64,7 @@ export const documentsApi = {
   },
 
   async deleteDocument(filePath: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filePath)}`, {
+    const response = await fetch(`/documents/${encodeURIComponent(filePath)}`, {
       method: 'DELETE',
     });
     if (!response.ok) {
@@ -76,8 +74,8 @@ export const documentsApi = {
 
   async listDocuments(parent?: string): Promise<DocumentMetadata[]> {
     const url = parent 
-      ? `${API_BASE_URL}/documents?parent=${encodeURIComponent(parent)}`
-      : `${API_BASE_URL}/documents`;
+      ? `/documents?parent=${encodeURIComponent(parent)}`
+      : `/documents`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to list documents: ${response.statusText}`);
@@ -86,7 +84,7 @@ export const documentsApi = {
   },
 
   async searchDocuments(request: SearchRequest): Promise<SearchResult[]> {
-    const response = await fetch(`${API_BASE_URL}/documents/search`, {
+    const response = await fetch(`/documents/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -104,7 +102,7 @@ export const documentsApi = {
   },
 
   async renameDocument(oldPath: string, newPath: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/documents/rename`, {
+    const response = await fetch(`/documents/rename`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

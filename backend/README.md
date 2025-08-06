@@ -9,28 +9,28 @@ The application uses environment variables for configuration:
 ### Environment Variables
 
 - `DATA_DIR`: Directory where files will be stored (default: "data")
-- `PORT`: Server port (default: "8080")
+- `VEBITOR_PORT`: Server port (default: "8080")
 
 ### Setting Environment Variables
 
 #### Windows (PowerShell)
 ```powershell
 $env:DATA_DIR="C:\my\documents"
-$env:PORT="9000"
+$env:VEBITOR_PORT="9000"
 go run main.go
 ```
 
 #### Windows (Command Prompt)
 ```cmd
 set DATA_DIR=C:\my\documents
-set PORT=9000
+set VEBITOR_PORT=9000
 go run main.go
 ```
 
 #### Linux/macOS
 ```bash
 export DATA_DIR="/home/user/documents"
-export PORT="9000"
+export VEBITOR_PORT="9000"
 go run main.go
 ```
 
@@ -38,7 +38,7 @@ go run main.go
 Create a `.env` file in the backend directory:
 ```
 DATA_DIR=C:\my\documents
-PORT=9000
+VEBITOR_PORT=9000
 ```
 
 Then use a tool like `godotenv` to load it:

@@ -15,8 +15,8 @@ var staticFiles embed.FS
 
 func main() {
 	// Set the user data and app data directories
-	os.Setenv("USERDATA_DIR", "userdata")
-	os.Setenv("APPDATA_DIR", "appdata")
+	os.Setenv("VEBITOR_USERDATA_DIR", "userdata")
+	os.Setenv("VEBITOR_APPDATA_DIR", "appdata")
 
 	r := gin.Default()
 
@@ -32,7 +32,7 @@ func main() {
 	// Register routes (includes static file handling in NoRoute)
 	routes.RegisterRoutes(r, staticFS)
 
-	port := os.Getenv("PORT")
+	port := os.Getenv("VEBITOR_PORT")
 	if port == "" {
 		port = "8080"
 	}

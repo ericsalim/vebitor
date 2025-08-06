@@ -13,7 +13,7 @@ import (
 )
 
 func getDataDir() string {
-	dataDir := os.Getenv("USERDATA_DIR")
+	dataDir := os.Getenv("VEBITOR_USERDATA_DIR")
 	if dataDir == "" {
 		dataDir = "userdata"
 	}

@@ -16,7 +16,7 @@ Vebitor can be deployed as a single executable that contains everything needed t
 
 ## Prerequisites
 
-- ** Windows **
+- **Windows**
 - **PowerShell**
 - **Go 1.20+** installed
 - **Node.js 16+** and **npm** installed
@@ -38,13 +38,13 @@ This will create `vebitor.exe` in the project root.
 ## Configuration
 
 ### Environment Variables
-- `PORT` - Server port (default: 8080)
-- `USERDATA_DIR` - User data directory (default: "userdata")
-- `APPDATA_DIR` - App data directory (default: "appdata")
+- `VEBITOR_PORT` - Server port (default: 8080)
+- `VEBITOR_USERDATA_DIR` - User data directory (default: "userdata")
+- `VEBITOR_APPDATA_DIR` - App data directory (default: "appdata")
 
 ### Example with Custom Port
 ```powershell
-$env:PORT = "3000"; .\vebitor.exe
+$env:VEBITOR_PORT = "3000"; .\vebitor.exe
 ```
 
 ## Security Considerations

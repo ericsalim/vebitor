@@ -25,7 +25,7 @@ function App() {
 
   // Helper to update session
   const updateSession = (openedFiles: OpenFile[], lastActiveFile: string, workingFolder?: string) => {
-    fetch('http://localhost:8080/session', {
+    fetch('/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -220,7 +220,7 @@ function App() {
 
   // Fetch session on startup
   useEffect(() => {
-    fetch('http://localhost:8080/session')
+    fetch('/session')
       .then(async res => {
         if (!res.ok) {
           try {

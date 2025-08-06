@@ -88,7 +88,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
         setIsLoading(true);
         isInitialLoadRef.current = true; // Mark as initial load
         try {
-          const response = await fetch(`http://localhost:8080/documents/${encodeURIComponent(filePath)}`);
+          const response = await fetch(`/documents/${encodeURIComponent(filePath)}`);
           if (response.ok) {
             const doc = await response.json();
             const newState = editorView.state.update({
@@ -129,7 +129,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
       if (!filePath || !editorView) return;
       const content = editorView.state.doc.toString();
       try {
-        const response = await fetch(`http://localhost:8080/documents/${encodeURIComponent(filePath)}`, {
+        const response = await fetch(`/documents/${encodeURIComponent(filePath)}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

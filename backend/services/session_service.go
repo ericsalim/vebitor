@@ -9,7 +9,7 @@ import (
 )
 
 func getSessionFilePath() string {
-	dataDir := os.Getenv("APPDATA_DIR")
+	dataDir := os.Getenv("VEBITOR_APPDATA_DIR")
 	if dataDir == "" {
 		dataDir = "appdata"
 	}
@@ -17,7 +17,7 @@ func getSessionFilePath() string {
 }
 
 func ensureAppDataDir() error {
-	dataDir := os.Getenv("APPDATA_DIR")
+	dataDir := os.Getenv("VEBITOR_APPDATA_DIR")
 	if dataDir == "" {
 		dataDir = "appdata"
 	}
@@ -48,7 +48,7 @@ func GetSession() (*models.Session, error) {
 		return nil, err
 	}
 	// Filter OpenedFiles to only those that exist
-	userDataDir := os.Getenv("USERDATA_DIR")
+	userDataDir := os.Getenv("VEBITOR_USERDATA_DIR")
 	if userDataDir == "" {
 		userDataDir = "userdata"
 	}

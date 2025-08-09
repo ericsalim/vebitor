@@ -80,10 +80,6 @@ const FolderBrowser: React.FC<FolderBrowserProps> = ({
     onClose();
   };
 
-  const getCurrentPathDisplay = () => {
-    return currentFolderPath || 'Root';
-  };
-
   const getBreadcrumbs = () => {
     if (!currentFolderPath) return ['Root'];
     return ['Root', ...currentFolderPath.split('/')];

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { javascript } from '@codemirror/lang-javascript';
@@ -21,7 +21,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
   ({ filePath, onSave, onLoad, onContentChange }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [editorView, setEditorView] = useState<EditorView | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+
     const [isInitialized, setIsInitialized] = useState(false);
     const filePathRef = useRef<string | undefined>(filePath);
     const isInitializedRef = useRef(false);
@@ -36,6 +36,31 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
     useEffect(() => {
       isInitializedRef.current = isInitialized;
     }, [isInitialized]);
+
+    const saveDocument = useCallback(async () => {
+      if (!filePath || !editorView) return;
+      const content = editorView.state.doc.toString();
+      try {
+        const response = await fetch(`/documents/${encodeURIComponent(filePath)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            filePath,
+            content,
+          }),
+        });
+        if (response.ok) {
+          onSave?.(content);
+          console.log('Document saved successfully');
+        } else {
+          console.error('Failed to save document');
+        }
+      } catch (error) {
+        console.error('Error saving document:', error);
+      }
+    }, [filePath, editorView, onSave]);
 
     // Create CodeMirror instance when component mounts
     useEffect(() => {
@@ -78,14 +103,13 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
       return () => {
         view.destroy();
       };
-    }, []); // Only run once when component mounts
+    }, [onContentChange, saveDocument]); // Include dependencies
 
     // Load document content when filePath is available and editor is ready
     useEffect(() => {
       if (!filePath || !editorView || !isInitialized) return;
 
       const loadDocument = async () => {
-        setIsLoading(true);
         isInitialLoadRef.current = true; // Mark as initial load
         try {
           const response = await fetch(`/documents/${encodeURIComponent(filePath)}`);
@@ -106,7 +130,6 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
         } catch (error) {
           console.error('Error loading document:', error);
         } finally {
-          setIsLoading(false);
           // Mark initial load as complete after a short delay
           setTimeout(() => {
             isInitialLoadRef.current = false;
@@ -115,7 +138,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
       };
 
       loadDocument();
-    }, [filePath, editorView, isInitialized]);
+    }, [filePath, editorView, isInitialized, onLoad]);
 
     // Mark as initialized after a short delay to avoid triggering content change on initial load
     useEffect(() => {
@@ -125,30 +148,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
       return () => clearTimeout(timer);
     }, []);
 
-    const saveDocument = async () => {
-      if (!filePath || !editorView) return;
-      const content = editorView.state.doc.toString();
-      try {
-        const response = await fetch(`/documents/${encodeURIComponent(filePath)}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            filePath,
-            content,
-          }),
-        });
-        if (response.ok) {
-          onSave?.(content);
-          console.log('Document saved successfully');
-        } else {
-          console.error('Failed to save document');
-        }
-      } catch (error) {
-        console.error('Error saving document:', error);
-      }
-    };
+
 
     useImperativeHandle(ref, () => ({
       save: saveDocument,

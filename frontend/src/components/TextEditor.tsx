@@ -103,7 +103,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
       return () => {
         view.destroy();
       };
-    }, [onContentChange, saveDocument]); // Include dependencies
+    }, [onContentChange]); // Include dependencies
 
     // Load document content when filePath is available and editor is ready
     useEffect(() => {
@@ -138,7 +138,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(
       };
 
       loadDocument();
-    }, [filePath, editorView, isInitialized, onLoad]);
+    }, [filePath, editorView, isInitialized]);
 
     // Mark as initialized after a short delay to avoid triggering content change on initial load
     useEffect(() => {

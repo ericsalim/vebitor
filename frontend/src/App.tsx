@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
 import FileExplorer from './components/FileExplorer';
 import TextEditor, { TextEditorHandle } from './components/TextEditor';
@@ -116,14 +116,14 @@ function App() {
     console.log('File loaded:', activeFile);
   };
 
-  const handleContentChange = (filePath: string) => {
+  const handleContentChange = useCallback((filePath: string) => {
     console.log('handleContentChange called for:', filePath);
     setOpenFiles((files) => {
       const updated = files.map(f => f.filePath === filePath ? { ...f, dirty: true } : f);
       console.log('Updated openFiles:', updated);
       return updated;
     });
-  };
+  }, []);
 
   // Prompt dialog handlers
   const handlePromptSave = () => {

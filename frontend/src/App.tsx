@@ -23,8 +23,28 @@ function App() {
   // Refs for TextEditors
   const editorRefs = useRef<{ [filePath: string]: React.RefObject<TextEditorHandle | null> }>({});
 
+  // State to track when to update session
+  const [sessionState, setSessionState] = useState<{
+    openedFiles: OpenFile[];
+    lastActiveFile: string;
+    workingFolder?: string;
+  } | null>(null);
+
   // Helper to update session
   const updateSession = (openedFiles: OpenFile[], lastActiveFile: string, workingFolder?: string) => {
+    setSessionState({
+      openedFiles,
+      lastActiveFile,
+      workingFolder
+    });
+  };
+
+  // Effect to handle session updates
+  useEffect(() => {
+    if (!sessionState) return;
+    
+    const { openedFiles, lastActiveFile, workingFolder } = sessionState;
+    
     fetch('/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,26 +54,21 @@ function App() {
         workingFolder: workingFolder !== undefined ? workingFolder : currentFolder,
       })
     }).catch(err => console.error('Session save error:', err));
-  };
+  }, [sessionState, currentFolder]);
 
   const handleFileSelect = (filePath: string) => {
     setOpenFiles((files) => {
-      if (files.find((f) => f.filePath === filePath)) return files;
-      const updated = [...files, { filePath, dirty: false }];
-      updateSession(updated, filePath);
-      return updated;
+      const isAlreadyOpen = files.find((f) => f.filePath === filePath);
+      return isAlreadyOpen ? files : [...files, { filePath, dirty: false }];
     });
     setActiveFile(filePath);
-    // Also update session if file is already open and just focused
-    if (openFiles.find(f => f.filePath === filePath)) {
-      updateSession(openFiles, filePath);
-    }
+    // Session update will be handled by the effect
   };
 
   // User-initiated folder change handler
   const handleUserFolderChange = (folderPath: string) => {
     setCurrentFolder(folderPath);
-    updateSession(openFiles, activeFile, folderPath);
+    // Session update will be handled by the effect
   };
 
   // For compatibility, keep handleFolderChange for internal sync (no session update)
@@ -61,9 +76,16 @@ function App() {
     setCurrentFolder(folderPath);
   };
 
+  // Effect to handle session updates when relevant state changes
+  useEffect(() => {
+    // Always update session when these dependencies change
+    // If all tabs are closed, openFiles will be empty and activeFile will be ''
+    updateSession(openFiles, activeFile, currentFolder);
+  }, [openFiles, activeFile, currentFolder]);
+
   const handleTabClick = (filePath: string) => {
     setActiveFile(filePath);
-    updateSession(openFiles, filePath);
+    // Session update will be handled by the effect
   };
 
   const handleTabClose = (e: React.MouseEvent, filePath: string) => {
@@ -89,19 +111,9 @@ function App() {
         }
         setActiveFile(newActive);
       }
-      updateSession(updated, newActive);
+      // Session update will be handled by the effect
       return updated;
     });
-    setTimeout(() => {
-      setOpenFiles((files) => {
-        if (files.length === 0) {
-          setActiveFile('');
-        } else if (activeFile === filePath) {
-          setActiveFile(files[files.length - 1].filePath);
-        }
-        return files;
-      });
-    }, 0);
     setPendingClose(null);
     // Removed setSelectedFileInExplorer
   };
